@@ -1,0 +1,51 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - echo "Installing dependencies..."
+      - pip install -r app/requirements.txt
+      - pip install pytest requests bandit coverage
+
+  pre_build:
+    commands:
+      - echo "Running unit tests..."
+      - coverage run -m pytest tests/
+      - coverage report
+      - coverage xml
+
+      # If coverage < 80%, fail
+      - COVERAGE=$(coverage report | grep TOTAL | awk '{print $4}' | sed 's/%//')
+      - if [ "$COVERAGE" -lt 80 ]; then echo "Coverage below 80%! Failing."; exit 1; fi
+
+  build:
+    commands:
+      - echo "Packaging artifact..."
+      - rm -rf build
+      - mkdir -p build/app
+      - cp -r app/ build/app/
+      - if [ -f cicd/appspecs/appspec.yml ]; then cp cicd/appspecs/appspec.yml build/; fi
+      - cp -r cicd/scripts build/scripts
+
+  post_build:
+    commands:
+      - echo "Running Flask app for integration tests..."
+      - nohup python3 app/app.py > /dev/null 2>&1 &
+      - sleep 5
+
+      - echo "Running integration tests..."
+      - pytest tests/integration
+
+      - echo "Running security scan..."
+      - bandit -r app/ -f json -o bandit-output.json
+
+      # Fail if Bandit reports any HIGH severity issues
+      - HIGH_SEVERITY=$(cat bandit-output.json | grep '"issue_severity": "HIGH"' | wc -l)
+      - if [ "$HIGH_SEVERITY" -gt 0 ]; then echo "High severity security vulnerabilities found! Failing."; exit 1; fi
+
+artifacts:
+  base-directory: build
+  files:
+    - '**/*'

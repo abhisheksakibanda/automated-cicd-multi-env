@@ -205,3 +205,17 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Terraform local files
+.terraform/
+*.tfstate
+*.tfstate.backup
+crash.log
+
+# Local override files
+override.tf
+override.tf.json
+*_override.tf
+
+# Ensure lockfile is kept in repo
+!.terraform.lock.hcl
