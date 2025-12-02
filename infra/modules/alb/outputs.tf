@@ -3,10 +3,19 @@ output "listener_arns" {
 }
 
 output "target_group_blue" {
-  value = { for k, v in aws_lb_target_group.blue : k => v.arn }
+  value = { for k, v in aws_lb_target_group.blue : k => v.name }
 }
 
 output "target_group_green" {
+  value = { for k, v in aws_lb_target_group.green : k => v.name }
+}
+
+# Also output ARNs in case needed elsewhere
+output "target_group_blue_arn" {
+  value = { for k, v in aws_lb_target_group.blue : k => v.arn }
+}
+
+output "target_group_green_arn" {
   value = { for k, v in aws_lb_target_group.green : k => v.arn }
 }
 

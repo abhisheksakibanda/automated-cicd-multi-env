@@ -7,13 +7,19 @@ variable "subnet_ids" {
 }
 variable "ami_id" {}
 variable "codedeploy_role_arn" {}
-variable "alarms" {
-  type = list(string)
-}
+
 variable "target_group_blue" {
   type = map(string)
 }
 variable "target_group_green" {
   type = map(string)
 }
-variable "listener_arn" {}
+variable "listener_arns" {
+  type = map(string)
+}
+
+variable "sns_topic_arn" {
+  type        = string
+  description = "SNS topic ARN for alarm notifications"
+  default     = ""
+}

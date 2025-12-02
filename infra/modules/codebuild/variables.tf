@@ -12,5 +12,16 @@ variable "codebuild_role_arn" {
 
 variable "buildspec_path" {
   type    = string
-  default = "buildspec.yml"
+  default = "cicd/buildspecs/buildspec.yml"
+}
+
+variable "test_buildspec_path" {
+  type    = string
+  default = "cicd/buildspecs/test-buildspec.yml"
+}
+
+variable "sns_topic_arn" {
+  type        = string
+  description = "SNS topic ARN for build notifications"
+  default     = ""
 }

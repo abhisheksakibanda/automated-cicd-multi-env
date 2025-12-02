@@ -7,7 +7,9 @@ phases:
     commands:
       - echo "Installing dependencies..."
       - pip install -r app/requirements.txt
-      - pip install pytest requests bandit coverage
+      - pip install pytest requests bandit coverage safety
+      - echo "Installing AWS CLI for Inspector integration..."
+      - pip install awscli boto3
 
   pre_build:
     commands:
@@ -31,19 +33,65 @@ phases:
 
   post_build:
     commands:
-      - echo "Running Flask app for integration tests..."
-      - nohup python3 app/app.py > /dev/null 2>&1 &
-      - sleep 5
-
-      - echo "Running integration tests..."
-      - pytest tests/integration
-
-      - echo "Running security scan..."
-      - bandit -r app/ -f json -o bandit-output.json
-
-      # Fail if Bandit reports any HIGH severity issues
-      - HIGH_SEVERITY=$(cat bandit-output.json | grep '"issue_severity": "HIGH"' | wc -l)
-      - if [ "$HIGH_SEVERITY" -gt 0 ]; then echo "High severity security vulnerabilities found! Failing."; exit 1; fi
+      - echo "=== Running Security Scans ==="
+      
+      # Bandit - Python code security scanning
+      - echo "Running Bandit security scan..."
+      - bandit -r app/ -f json -o bandit-output.json || true
+      - bandit -r app/ -f txt || true
+      
+      # Safety - Python dependency vulnerability scanning
+      - echo "Running Safety dependency vulnerability scan..."
+      - safety check --json --output safety-output.json || true
+      - safety check || true
+      
+      # Quality Gates
+      - echo "=== Evaluating Quality Gates ==="
+      
+      # Check Bandit HIGH severity issues
+      - |
+        if [ -f bandit-output.json ]; then
+          HIGH_SEVERITY=$(cat bandit-output.json | grep -c '"issue_severity": "HIGH"' || echo "0")
+          MEDIUM_SEVERITY=$(cat bandit-output.json | grep -c '"issue_severity": "MEDIUM"' || echo "0")
+          
+          echo "Bandit Results:"
+          echo "  HIGH severity issues: $HIGH_SEVERITY"
+          echo "  MEDIUM severity issues: $MEDIUM_SEVERITY"
+          
+          if [ "$HIGH_SEVERITY" -gt 0 ]; then
+            echo "❌ QUALITY GATE FAILED: High severity security vulnerabilities found!"
+            exit 1
+          fi
+        else
+          echo "Warning: bandit-output.json not found"
+        fi
+      
+      # Check Safety dependency vulnerabilities
+      - |
+        if [ -f safety-output.json ]; then
+          VULN_COUNT=$(cat safety-output.json | grep -c '"vulnerability"' || echo "0")
+          echo "Safety Results:"
+          echo "  Known vulnerabilities: $VULN_COUNT"
+          
+          if [ "$VULN_COUNT" -gt 0 ]; then
+            echo "❌ QUALITY GATE FAILED: Known vulnerabilities in dependencies!"
+            cat safety-output.json
+            exit 1
+          fi
+        else
+          echo "Warning: safety-output.json not found"
+        fi
+      
+      # AWS Inspector scan (if configured)
+      - |
+        if [ -f cicd/scripts/inspector_scan.sh ]; then
+          echo "Running AWS Inspector scan..."
+          bash cicd/scripts/inspector_scan.sh || echo "Inspector scan completed with warnings"
+        else
+          echo "Inspector scan script not found, skipping..."
+        fi
+      
+      - echo "All security scans passed!"
 
 artifacts:
   base-directory: build

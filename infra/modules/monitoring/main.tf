@@ -33,12 +33,36 @@ resource "aws_cloudwatch_dashboard" "dashboard" {
         "properties" : {
           "title" : "Mean Build Duration",
           "metrics" : [
-            [ "AWS/CodeBuild", "Duration", "ProjectName", var.codebuild_project_dev ],
-            [ ".", "Duration", ".", var.codebuild_project_staging ],
-            [ ".", "Duration", ".", var.codebuild_project_prod ]
+            [ "AWS/CodeBuild", "Duration", "ProjectName", var.codebuild_project_dev, { "stat": "Average", "label": "Dev" } ],
+            [ ".", "Duration", ".", var.codebuild_project_staging, { "stat": "Average", "label": "Staging" } ],
+            [ ".", "Duration", ".", var.codebuild_project_prod, { "stat": "Average", "label": "Prod" } ]
           ],
           "view" : "timeSeries",
           "region" : var.aws_region
+        }
+      },
+
+      # Mean Time to Deployment (CodeDeploy)
+      {
+        "type" : "metric",
+        "x" : 12,
+        "y" : 7,
+        "width" : 12,
+        "height" : 6,
+        "properties" : {
+          "title" : "Mean Time to Deployment (seconds)",
+          "metrics" : [
+            [ "AWS/CodeDeploy", "DeploymentDuration", "ApplicationName", var.codedeploy_app, "DeploymentGroupName", var.codedeploy_deployment_groups["dev"], { "stat": "Average", "label": "Dev" } ],
+            [ ".", ".", ".", ".", ".", var.codedeploy_deployment_groups["staging"], { "stat": "Average", "label": "Staging" } ],
+            [ ".", ".", ".", ".", ".", var.codedeploy_deployment_groups["prod"], { "stat": "Average", "label": "Prod" } ]
+          ],
+          "view" : "timeSeries",
+          "region" : var.aws_region,
+          "yAxis" : {
+            "left" : {
+              "label" : "Duration (seconds)"
+            }
+          }
         }
       },
 
@@ -75,12 +99,97 @@ resource "aws_cloudwatch_dashboard" "dashboard" {
   })
 }
 
+# CodeBuild failure alarms for each environment
+resource "aws_cloudwatch_metric_alarm" "codebuild_fail_alarm" {
+  for_each = {
+    dev     = var.codebuild_project_dev
+    staging = var.codebuild_project_staging
+    prod    = var.codebuild_project_prod
+  }
+
+  alarm_name          = "${var.project_name}-${each.key}-build-fail-alarm"
+  alarm_description   = "Alerts when ${each.key} CodeBuild project fails"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = "FailedBuilds"
+  namespace           = "AWS/CodeBuild"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 1
+  alarm_actions       = [local.sns_topic_arn]
+
+  dimensions = {
+    ProjectName = each.value
+  }
+}
+
+# Application health alarms for CodeDeploy rollback triggers
+# These alarms monitor target group health for Blue/Green deployments
+resource "aws_cloudwatch_metric_alarm" "app_unhealthy_alarm" {
+  for_each = var.target_group_blue_arns
+
+  alarm_name          = "${var.project_name}-${each.key}-app-unhealthy-alarm"
+  alarm_description   = "Triggers rollback if ${each.key} application becomes unhealthy"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "UnHealthyHostCount"
+  namespace           = "AWS/ApplicationELB"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 0
+  treat_missing_data  = "breaching"
+  alarm_actions       = [local.sns_topic_arn]
+
+  dimensions = {
+    TargetGroup = split("/", each.value)[1]  # Extract target group name from ARN
+    LoadBalancer = split("/", each.value)[0]  # Extract load balancer from ARN
+  }
+
+  tags = {
+    Environment = each.key
+    Purpose     = "CodeDeployRollback"
+  }
+}
+
+# HTTP 5xx error alarm for application health
+resource "aws_cloudwatch_metric_alarm" "app_5xx_alarm" {
+  for_each = var.target_group_blue_arns
+
+  alarm_name          = "${var.project_name}-${each.key}-app-5xx-alarm"
+  alarm_description   = "Triggers rollback if ${each.key} application has high 5xx error rate"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "HTTPCode_Target_5XX_Count"
+  namespace           = "AWS/ApplicationELB"
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 5
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [local.sns_topic_arn]
+
+  dimensions = {
+    TargetGroup = split("/", each.value)[1]
+    LoadBalancer = split("/", each.value)[0]
+  }
+
+  tags = {
+    Environment = each.key
+    Purpose     = "CodeDeployRollback"
+  }
+}
+
+# Use shared SNS topic if provided, otherwise create one
 resource "aws_sns_topic" "cicd_alerts" {
-  name = "${var.project_name}-alerts"
+  count = var.sns_topic_arn == "" ? 1 : 0
+  name  = "${var.project_name}-alerts"
+}
+
+locals {
+  sns_topic_arn = var.sns_topic_arn != "" ? var.sns_topic_arn : aws_sns_topic.cicd_alerts[0].arn
 }
 
 resource "aws_sns_topic_subscription" "email_sub" {
-  topic_arn = aws_sns_topic.cicd_alerts.arn
+  topic_arn = local.sns_topic_arn
   protocol  = "email"
   endpoint  = var.alert_email
 }
@@ -95,7 +204,7 @@ resource "aws_cloudwatch_metric_alarm" "pipeline_fail_alarm" {
   period              = 300
   statistic           = "Sum"
   threshold           = 1
-  alarm_actions       = [aws_sns_topic.cicd_alerts.arn]
+  alarm_actions       = [local.sns_topic_arn]
 
   dimensions = {
     PipelineName = var.pipeline_name

@@ -1,0 +1,71 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - echo "Installing test dependencies..."
+      - pip install pytest requests
+
+  pre_build:
+    commands:
+      - echo "Setting up isolated test environment..."
+      - echo "Current directory structure:"
+      - ls -la
+      - echo "Setting up application from build artifacts..."
+      - |
+        # The build_output artifact contains the build/ directory structure
+        # We need to extract the app from build/app/
+        if [ -d "app/app" ]; then
+          echo "Using app from app/app directory"
+          TEST_APP_DIR="app/app"
+        elif [ -d "app" ]; then
+          echo "Using app from app directory"
+          TEST_APP_DIR="app"
+        else
+          echo "Error: Application directory not found"
+          ls -la
+          exit 1
+        fi
+      - echo "Application directory: $TEST_APP_DIR"
+      - echo "Tests should be in tests/ directory from source"
+
+  build:
+    commands:
+      - echo "Starting application in isolated test environment..."
+      - cd $TEST_APP_DIR
+      - pip install -r requirements.txt
+      - nohup python3 app.py > /tmp/app.log 2>&1 &
+      - sleep 5
+      - echo "Verifying application is running..."
+      - curl -f http://localhost:5000/health || (echo "Health check failed. App log:" && cat /tmp/app.log && exit 1)
+      - echo "Application started successfully on port 5000"
+
+  post_build:
+    commands:
+      - echo "Running integration tests in isolated environment..."
+      - export APP_URL="http://localhost:5000"
+      - |
+        # Find and run integration tests
+        TEST_DIR=""
+        if [ -d "tests/integration" ]; then
+          TEST_DIR="tests/integration"
+        elif [ -d "../tests/integration" ]; then
+          TEST_DIR="../tests/integration"
+        elif [ -d "source_output/tests/integration" ]; then
+          TEST_DIR="source_output/tests/integration"
+        else
+          echo "Error: Integration tests directory not found"
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -la
+          exit 1
+        fi
+        echo "Running tests from: $TEST_DIR"
+        pytest $TEST_DIR -v --tb=short --junitxml=test-results.xml
+      - echo "Integration tests completed successfully"
+      - echo "Stopping test application..."
+      - pkill -f "python3 app.py" || true
+      - echo "Test stage completed successfully"
+

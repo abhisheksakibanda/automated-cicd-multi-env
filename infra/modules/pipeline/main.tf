@@ -79,6 +79,25 @@ resource "aws_codepipeline" "cicd_pipeline" {
     }
   }
 
+  # Test stage - runs integration tests in isolated environment
+  stage {
+    name = "Test"
+
+    action {
+      name             = "Integration_Test"
+      category         = "Test"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      version          = "1"
+      input_artifacts  = ["source_output", "build_output"]
+      output_artifacts = ["test_output"]
+
+      configuration = {
+        ProjectName = var.codebuild_test_project
+      }
+    }
+  }
+
   # Deploy (dev) — integrates with CodeDeploy later in Task 4
   stage {
     name = "DeployToDev"

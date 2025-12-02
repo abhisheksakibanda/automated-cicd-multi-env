@@ -6,6 +6,7 @@ variable "github_token" {
 }
 
 variable "codebuild_project_dev" {}
+variable "codebuild_test_project" {}
 variable "codedeploy_app" {}
 variable "codedeploy_group_dev" {}
 variable "codedeploy_group_staging" {}
