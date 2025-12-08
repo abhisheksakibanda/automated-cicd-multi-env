@@ -179,13 +179,15 @@ resource "aws_cloudwatch_metric_alarm" "app_5xx_alarm" {
 }
 
 # Use shared SNS topic if provided, otherwise create one
+# Note: We use a separate variable to determine if we should create the topic
+# to avoid issues with unknown values at plan time
 resource "aws_sns_topic" "cicd_alerts" {
-  count = var.sns_topic_arn == "" ? 1 : 0
+  count = var.create_sns_topic ? 1 : 0
   name  = "${var.project_name}-alerts"
 }
 
 locals {
-  sns_topic_arn = var.sns_topic_arn != "" ? var.sns_topic_arn : aws_sns_topic.cicd_alerts[0].arn
+  sns_topic_arn = var.create_sns_topic ? (length(aws_sns_topic.cicd_alerts) > 0 ? aws_sns_topic.cicd_alerts[0].arn : "") : var.sns_topic_arn
 }
 
 resource "aws_sns_topic_subscription" "email_sub" {

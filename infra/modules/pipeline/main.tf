@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "artifact_bucket" {
-  bucket = "${var.project_name}-artifact-bucket"
+  bucket        = "${var.project_name}-artifact-bucket"
   force_destroy = true
 }
 
@@ -31,6 +31,11 @@ resource "aws_iam_role_policy_attachment" "codepipeline_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AWSCodePipelineFullAccess"
 }
 
+resource "aws_codestarconnections_connection" "github_connection" {
+  name          = "${var.project_name}-github-connection"
+  provider_type = "GitHub"
+}
+
 resource "aws_codepipeline" "cicd_pipeline" {
   name     = "${var.project_name}-pipeline"
   role_arn = aws_iam_role.codepipeline_role.arn
@@ -47,16 +52,16 @@ resource "aws_codepipeline" "cicd_pipeline" {
     action {
       name             = "GitHub_Source"
       category         = "Source"
-      owner            = "ThirdParty"
-      provider         = "GitHub"
+      owner            = "AWS"
+      provider         = "CodeStarSourceConnection"
       version          = "1"
       output_artifacts = ["source_output"]
 
       configuration = {
-        Owner      = var.github_owner
-        Repo       = var.github_repo
-        Branch     = "dev"
-        OAuthToken = var.github_token
+        ConnectionArn    = aws_codestarconnections_connection.github_connection.arn
+        FullRepositoryId = "${var.github_owner}/${var.github_repo}"
+        BranchName       = "dev"
+        OAuthToken       = var.github_token
       }
     }
   }

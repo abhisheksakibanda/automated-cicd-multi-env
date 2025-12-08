@@ -18,6 +18,12 @@ variable "sns_topic_arn" {
   default     = ""
 }
 
+variable "create_sns_topic" {
+  type        = bool
+  description = "Whether to create a new SNS topic (set to false if using shared topic)"
+  default     = false
+}
+
 variable "target_group_blue_arns" {
   type        = map(string)
   description = "Map of blue target group ARNs by environment"

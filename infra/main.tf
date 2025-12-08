@@ -74,7 +74,8 @@ module "monitoring" {
   target_group_blue_arns  = module.alb.target_group_blue_arn
   target_group_green_arns = module.alb.target_group_green_arn
 
-  sns_topic_arn = module.iam.sns_topic_arn
-  alert_email   = var.alert_email_address
+  sns_topic_arn    = module.iam.sns_topic_arn
+  create_sns_topic = false
+  alert_email      = var.alert_email_address
 }
 

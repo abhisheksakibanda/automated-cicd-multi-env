@@ -41,7 +41,7 @@ resource "aws_codebuild_project" "app_build" {
 
 # CloudWatch Events rule for build notifications
 resource "aws_cloudwatch_event_rule" "build_events" {
-  for_each = var.sns_topic_arn != "" ? toset(local.environments) : []
+  for_each = toset(local.environments)
 
   name        = "${var.project_name}-${each.key}-build-events"
   description = "Capture CodeBuild events for ${each.key} environment"
@@ -58,7 +58,7 @@ resource "aws_cloudwatch_event_rule" "build_events" {
 
 # SNS target for build events
 resource "aws_cloudwatch_event_target" "build_sns_target" {
-  for_each = var.sns_topic_arn != "" ? toset(local.environments) : []
+  for_each = toset(local.environments)
 
   rule      = aws_cloudwatch_event_rule.build_events[each.key].name
   target_id = "${var.project_name}-${each.key}-build-sns-target"

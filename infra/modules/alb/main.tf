@@ -1,5 +1,7 @@
 locals {
   envs = var.environments
+  # Shorten project name for resource names (AWS has 32 char limit for ALB/target groups)
+  short_name = substr(var.project_name, 0, min(15, length(var.project_name)))
 }
 
 # SECURITY GROUP
@@ -31,7 +33,7 @@ resource "aws_security_group" "alb_sg" {
 resource "aws_lb" "this" {
   for_each = toset(local.envs)
 
-  name               = "${var.project_name}-${each.key}-alb"
+  name               = "${local.short_name}-${each.key}-alb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg[each.key].id]
@@ -42,7 +44,7 @@ resource "aws_lb" "this" {
 resource "aws_lb_target_group" "blue" {
   for_each = toset(local.envs)
 
-  name     = "${var.project_name}-${each.key}-blue-tg"
+  name     = "${local.short_name}-${each.key}-blue-tg"
   port     = 5000
   protocol = "HTTP"
   vpc_id   = var.vpc_id
@@ -60,7 +62,7 @@ resource "aws_lb_target_group" "blue" {
 resource "aws_lb_target_group" "green" {
   for_each = toset(local.envs)
 
-  name     = "${var.project_name}-${each.key}-green-tg"
+  name     = "${local.short_name}-${each.key}-green-tg"
   port     = 5000
   protocol = "HTTP"
   vpc_id   = var.vpc_id
