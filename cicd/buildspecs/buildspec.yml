@@ -59,7 +59,7 @@ phases:
           echo "  MEDIUM severity issues: $MEDIUM_SEVERITY"
           
           if [ "$HIGH_SEVERITY" -gt 0 ]; then
-            echo "❌ QUALITY GATE FAILED: High severity security vulnerabilities found!"
+            echo "QUALITY GATE FAILED: High severity security vulnerabilities found!"
             exit 1
           fi
         else
@@ -74,7 +74,7 @@ phases:
           echo "  Known vulnerabilities: $VULN_COUNT"
           
           if [ "$VULN_COUNT" -gt 0 ]; then
-            echo "❌ QUALITY GATE FAILED: Known vulnerabilities in dependencies!"
+            echo "QUALITY GATE FAILED: Known vulnerabilities in dependencies!"
             cat safety-output.json
             exit 1
           fi

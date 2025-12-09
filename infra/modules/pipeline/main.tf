@@ -122,19 +122,6 @@ resource "aws_codepipeline" "cicd_pipeline" {
     }
   }
 
-  # Manual approval before staging
-  stage {
-    name = "ApprovalForStaging"
-
-    action {
-      name     = "Approval"
-      category = "Approval"
-      owner    = "AWS"
-      provider = "Manual"
-      version  = "1"
-    }
-  }
-
   stage {
     name = "DeployToStaging"
 
