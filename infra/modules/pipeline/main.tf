@@ -3,13 +3,6 @@ resource "aws_s3_bucket" "artifact_bucket" {
   force_destroy = true
 }
 
-resource "aws_s3_bucket_versioning" "versioning" {
-  bucket = aws_s3_bucket.artifact_bucket.id
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
 # Pipeline Role
 resource "aws_iam_role" "codepipeline_role" {
   name = "${var.project_name}-codepipeline-role"
