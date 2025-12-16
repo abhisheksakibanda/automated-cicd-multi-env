@@ -28,7 +28,7 @@ resource "aws_codebuild_project" "app_build" {
   artifacts {
     type = "CODEPIPELINE"
   }
-  badge_enabled = true
+  # badge_enabled = true - not supported for codepipeline projects
 
   # CloudWatch Logs configuration
   logs_config {
@@ -86,7 +86,7 @@ resource "aws_codebuild_project" "test_project" {
     type = "CODEPIPELINE"
   }
 
-  badge_enabled = true
+  # badge_enabled = true - not supported for codepipeline projects
 
   # CloudWatch Logs configuration
   logs_config {

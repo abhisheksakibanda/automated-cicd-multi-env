@@ -1,5 +1,5 @@
 resource "aws_codedeploy_app" "app" {
-  name = "${var.project_name}-app"
+  name             = "${var.project_name}-app"
   compute_platform = "Server"
 }
 
@@ -7,25 +7,37 @@ resource "aws_codedeploy_app" "app" {
 resource "aws_autoscaling_group" "asg" {
   for_each = toset(var.environments)
 
-  name                      = "${var.project_name}-${each.key}-asg"
-  max_size                  = 1
-  min_size                  = 1
-  desired_capacity          = 1
+  name             = "${var.project_name}-${each.key}-asg"
+  max_size         = 1
+  min_size         = 1
+  desired_capacity = 1
 
-  launch_configuration      = aws_launch_configuration.launch_config[each.key].name
-  vpc_zone_identifier       = var.subnet_ids
-  health_check_type         = "EC2"
+  launch_template {
+    id      = aws_launch_template.launch_template[each.key].id
+    version = "$Latest"
+  }
+  vpc_zone_identifier = var.subnet_ids
+  health_check_type   = "EC2"
 }
 
-resource "aws_launch_configuration" "launch_config" {
+resource "aws_launch_template" "launch_template" {
   for_each = toset(var.environments)
 
-  name_prefix   = "${var.project_name}-${each.key}-lc"
+  name_prefix   = "${var.project_name}-${each.key}-lt"
   image_id      = var.ami_id
   instance_type = "t2.micro"
 
-  lifecycle {
-    create_before_destroy = true
+  network_interfaces {
+    associate_public_ip_address = true
+    subnet_id                   = var.subnet_ids[0]
+  }
+
+  tag_specifications {
+    resource_type = "instance"
+    tags = {
+      Name        = "${var.project_name}-${each.key}-instance"
+      Environment = each.key
+    }
   }
 }
 
@@ -44,14 +56,18 @@ resource "aws_codedeploy_deployment_group" "dg" {
   deployment_config_name = "CodeDeployDefault.AllAtOnce"
 
   deployment_style {
-    deployment_type = "BLUE_GREEN"
+    deployment_type   = "BLUE_GREEN"
     deployment_option = "WITH_TRAFFIC_CONTROL"
   }
 
   blue_green_deployment_config {
     terminate_blue_instances_on_deployment_success {
-      action = "TERMINATE"
+      action                           = "TERMINATE"
       termination_wait_time_in_minutes = 0
+    }
+
+    deployment_ready_option {
+      action_on_timeout = "CONTINUE_DEPLOYMENT"
     }
   }
 
@@ -69,9 +85,6 @@ resource "aws_codedeploy_deployment_group" "dg" {
         name = var.target_group_green[each.key]
       }
       prod_traffic_route {
-        listener_arns = [var.listener_arns[each.key]]
-      }
-      test_traffic_route {
         listener_arns = [var.listener_arns[each.key]]
       }
     }
@@ -105,8 +118,4 @@ resource "aws_cloudwatch_metric_alarm" "app_unhealthy" {
     Environment = each.key
     Purpose     = "CodeDeployRollback"
   }
-}
-
-output "app_unhealthy_alarm_names" {
-  value = { for k, v in aws_cloudwatch_metric_alarm.app_unhealthy : k => v.alarm_name }
 }
