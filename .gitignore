@@ -220,4 +220,5 @@ override.tf.json
 # Ensure lockfile is kept in repo
 !.terraform.lock.hcl
 
+# Terraform variable files
 *.tfvars
