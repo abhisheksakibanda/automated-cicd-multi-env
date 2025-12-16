@@ -1,14 +1,18 @@
+import os
+
 from flask import Flask, jsonify
 
 app = Flask(__name__)
 
+APP_ENV = os.getenv("APP_ENV", "dev")
+
 @app.route("/health")
 def health():
-    return jsonify({"status": "ok"}), 200
+    return jsonify({"status": "ok", "env": APP_ENV}), 200
 
 @app.route("/")
 def index():
-    return "Hello from the CI/CD demo app!", 200
+    return f"Hello from the CI/CD demo app!\nEnv: {APP_ENV}", 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
