@@ -33,8 +33,6 @@ module "codedeploy" {
   codedeploy_role_arn = module.iam.codedeploy_role_arn
 
   target_group_blue  = module.alb.target_group_blue
-  target_group_green = module.alb.target_group_green
-  listener_arns      = module.alb.listener_arns
   sns_topic_arn      = module.iam.sns_topic_arn
 }
 

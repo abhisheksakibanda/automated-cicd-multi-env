@@ -11,12 +11,6 @@ variable "codedeploy_role_arn" {}
 variable "target_group_blue" {
   type = map(string)
 }
-variable "target_group_green" {
-  type = map(string)
-}
-variable "listener_arns" {
-  type = map(string)
-}
 
 variable "sns_topic_arn" {
   type        = string

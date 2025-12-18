@@ -54,7 +54,6 @@ resource "aws_codepipeline" "cicd_pipeline" {
         ConnectionArn    = aws_codestarconnections_connection.github_connection.arn
         FullRepositoryId = "${var.github_owner}/${var.github_repo}"
         BranchName       = "dev"
-        OAuthToken       = var.github_token
       }
     }
   }

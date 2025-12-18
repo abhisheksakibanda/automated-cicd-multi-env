@@ -17,7 +17,7 @@ resource "aws_autoscaling_group" "asg" {
     version = "$Latest"
   }
   vpc_zone_identifier = var.subnet_ids
-  health_check_type   = "EC2"
+  health_check_type   = "ELB"
 }
 
 resource "aws_launch_template" "launch_template" {
@@ -63,7 +63,7 @@ resource "aws_codedeploy_deployment_group" "dg" {
   blue_green_deployment_config {
     terminate_blue_instances_on_deployment_success {
       action                           = "TERMINATE"
-      termination_wait_time_in_minutes = 0
+      termination_wait_time_in_minutes = 5
     }
 
     deployment_ready_option {
@@ -77,17 +77,14 @@ resource "aws_codedeploy_deployment_group" "dg" {
   }
 
   load_balancer_info {
-    target_group_pair_info {
-      target_group {
-        name = var.target_group_blue[each.key]
-      }
-      target_group {
-        name = var.target_group_green[each.key]
-      }
-      prod_traffic_route {
-        listener_arns = [var.listener_arns[each.key]]
-      }
+    target_group_info {
+      name = var.target_group_blue[each.key]
     }
+  }
+
+  auto_rollback_configuration {
+    enabled = true
+    events  = ["DEPLOYMENT_FAILURE", "DEPLOYMENT_STOP_ON_ALARM"]
   }
 }
 
