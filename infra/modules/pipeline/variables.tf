@@ -1,9 +1,6 @@
 variable "project_name" {}
 variable "github_owner" {}
 variable "github_repo" {}
-variable "github_token" {
-  sensitive = true
-}
 
 variable "codebuild_project_dev" {}
 variable "codebuild_test_project" {}

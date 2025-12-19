@@ -39,6 +39,11 @@ resource "aws_launch_template" "launch_template" {
       Environment = each.key
     }
   }
+
+  iam_instance_profile {
+    name = var.ec2_inspector_instance_profile_name
+  }
+
 }
 
 # Deployment Groups for Blue/Green

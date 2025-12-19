@@ -4,12 +4,12 @@ module "iam" {
 }
 
 module "codebuild" {
-  source            = "./modules/codebuild"
-  project_name      = var.project_name
-  environments      = ["dev", "staging", "prod"]
+  source             = "./modules/codebuild"
+  project_name       = var.project_name
+  environments       = ["dev", "staging", "prod"]
   codebuild_role_arn = module.iam.codebuild_role_arn
-  buildspec_path    = "cicd/buildspecs/buildspec.yml"
-  sns_topic_arn     = module.iam.sns_topic_arn
+  buildspec_path     = "cicd/buildspecs/buildspec.yml"
+  sns_topic_arn      = module.iam.sns_topic_arn
 }
 
 module "alb" {
@@ -25,15 +25,17 @@ module "alb" {
 module "codedeploy" {
   source = "./modules/codedeploy"
 
-  project_name        = var.project_name
-  environments        = ["dev", "staging", "prod"]
+  project_name = var.project_name
+  environments = ["dev", "staging", "prod"]
 
-  subnet_ids         = var.private_subnets
-  ami_id             = "ami-0c02fb55956c7d316"
+  subnet_ids          = var.private_subnets
+  ami_id              = "ami-0c02fb55956c7d316"
   codedeploy_role_arn = module.iam.codedeploy_role_arn
 
-  target_group_blue  = module.alb.target_group_blue
-  sns_topic_arn      = module.iam.sns_topic_arn
+  target_group_blue = module.alb.target_group_blue
+  sns_topic_arn     = module.iam.sns_topic_arn
+
+  ec2_inspector_instance_profile_name = module.iam.ec2_inspector_instance_profile_name
 }
 
 module "pipeline" {
@@ -43,7 +45,6 @@ module "pipeline" {
 
   github_owner = "abhisheksakibanda"
   github_repo  = "automated-cicd-multi-env"
-  github_token = var.github_token
 
   codebuild_project_dev  = module.codebuild.codebuild_project_names["dev"]
   codebuild_test_project = module.codebuild.test_project_name
@@ -58,15 +59,15 @@ module "pipeline" {
 module "monitoring" {
   source = "./modules/monitoring"
 
-  project_name = var.project_name
+  project_name  = var.project_name
   pipeline_name = module.pipeline.pipeline_name
-  aws_region = "us-east-1"
+  aws_region    = "us-east-1"
 
   codebuild_project_dev     = module.codebuild.codebuild_project_names["dev"]
   codebuild_project_staging = module.codebuild.codebuild_project_names["staging"]
   codebuild_project_prod    = module.codebuild.codebuild_project_names["prod"]
 
-  codedeploy_app = module.codedeploy.codedeploy_app_name
+  codedeploy_app               = module.codedeploy.codedeploy_app_name
   codedeploy_deployment_groups = module.codedeploy.deployment_groups
 
   target_group_blue_arns  = module.alb.target_group_blue_arn
@@ -78,6 +79,7 @@ module "monitoring" {
 }
 
 module "inspector" {
-  source = "./modules/security"
+  source         = "./modules/security"
+  aws_account_id = var.aws_account_id
 }
 

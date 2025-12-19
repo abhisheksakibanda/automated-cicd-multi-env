@@ -17,3 +17,8 @@ variable "sns_topic_arn" {
   description = "SNS topic ARN for alarm notifications"
   default     = ""
 }
+
+variable "ec2_inspector_instance_profile_name" {
+    type        = string
+    description = "EC2 Inspector Instance Profile Name"
+}

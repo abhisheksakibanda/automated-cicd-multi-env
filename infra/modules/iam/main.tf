@@ -109,3 +109,51 @@ resource "aws_sns_topic_policy" "eventbridge_publish" {
     ]
   })
 }
+
+# IAM role for EC2 instances to read AWS Inspector findings
+resource "aws_iam_role" "ec2_inspector_role" {
+  name = "${var.project_name}-ec2-inspector-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "ec2_inspector_policy" {
+  name = "${var.project_name}-ec2-inspector-policy"
+  role = aws_iam_role.ec2_inspector_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "inspector2:ListFindings",
+          "inspector2:GetFindings",
+          "inspector2:ListCoverage"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "sts:GetCallerIdentity"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_instance_profile" "ec2_inspector_profile" {
+  name = "${var.project_name}-ec2-inspector-profile"
+  role = aws_iam_role.ec2_inspector_role.name
+}

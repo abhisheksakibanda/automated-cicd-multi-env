@@ -26,3 +26,8 @@ variable "alert_email_address" {
   type        = string
   description = "Email address to receive pipeline alerts"
 }
+
+variable "aws_account_id" {
+  type        = string
+  description = "AWS Account ID where resources will be deployed"
+}
