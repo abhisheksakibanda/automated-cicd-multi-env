@@ -77,3 +77,7 @@ module "monitoring" {
   alert_email      = var.alert_email_address
 }
 
+module "inspector" {
+  source = "./modules/security"
+}
+
