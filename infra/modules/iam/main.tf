@@ -137,7 +137,6 @@ resource "aws_iam_role_policy" "ec2_inspector_policy" {
         Effect = "Allow"
         Action = [
           "inspector2:ListFindings",
-          "inspector2:GetFindings",
           "inspector2:ListCoverage"
         ]
         Resource = "*"
