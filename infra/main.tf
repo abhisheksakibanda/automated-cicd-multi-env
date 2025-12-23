@@ -48,6 +48,10 @@ module "pipeline" {
 
   codebuild_project_dev  = module.codebuild.codebuild_project_names["dev"]
   codebuild_test_project = module.codebuild.test_project_name
+  codebuild_project_arns = concat(
+    module.codebuild.codebuild_project_arns,
+    [module.codebuild.test_project_arn]
+  )
 
   codedeploy_app           = module.codedeploy.codedeploy_app_name
   codedeploy_group_dev     = module.codedeploy.deployment_groups["dev"]

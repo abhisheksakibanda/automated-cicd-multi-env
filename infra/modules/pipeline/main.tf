@@ -55,6 +55,25 @@ resource "aws_iam_role_policy" "codepipeline_permissions" {
           "s3:PutObject"
         ]
         Resource = "${aws_s3_bucket.artifact_bucket.arn}/*"
+      },
+      # Permissions for CodeBuild
+      {
+        Effect = "Allow"
+        Action = [
+          "codebuild:BatchGetBuilds",
+          "codebuild:StartBuild"
+        ]
+        Resource = var.codebuild_project_arns
+      },
+      # Permissions for CodeDeploy
+      {
+        Effect = "Allow"
+        Action = [
+          "codedeploy:CreateDeployment",
+          "codedeploy:GetDeployment",
+          "codedeploy:GetDeploymentGroup"
+        ]
+        Resource = "*"
       }
     ]
   })

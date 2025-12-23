@@ -1,4 +1,6 @@
-variable "project_name" {}
+variable "project_name" {
+  type = string
+}
 variable "environments" {
   type = list(string)
 }
@@ -19,6 +21,6 @@ variable "sns_topic_arn" {
 }
 
 variable "ec2_inspector_instance_profile_name" {
-    type        = string
-    description = "EC2 Inspector Instance Profile Name"
+  type        = string
+  description = "EC2 Inspector Instance Profile Name"
 }
