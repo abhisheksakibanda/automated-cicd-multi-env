@@ -91,6 +91,30 @@ resource "aws_iam_role_policy" "codebuild_inspector" {
   })
 }
 
+resource "aws_iam_role_policy" "codebuild_cloudwatch_logs" {
+  name = "${var.project_name}-codebuild-cloudwatch-logs"
+  role = aws_iam_role.codebuild_service_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = [
+          "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/codebuild/*",
+          "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/codebuild/*:log-stream:*"
+        ]
+      }
+    ]
+  })
+}
+
+
 # SNS topic policy to allow EventBridge to publish
 resource "aws_sns_topic_policy" "eventbridge_publish" {
   arn = aws_sns_topic.cicd_notifications.arn

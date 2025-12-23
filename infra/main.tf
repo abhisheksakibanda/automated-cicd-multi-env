@@ -1,6 +1,7 @@
 module "iam" {
   source       = "./modules/iam"
   project_name = var.project_name
+  aws_region = var.aws_region
 }
 
 module "codebuild" {
@@ -65,7 +66,7 @@ module "monitoring" {
 
   project_name  = var.project_name
   pipeline_name = module.pipeline.pipeline_name
-  aws_region    = "us-east-1"
+  aws_region    = var.aws_region
 
   codebuild_project_dev     = module.codebuild.codebuild_project_names["dev"]
   codebuild_project_staging = module.codebuild.codebuild_project_names["staging"]
