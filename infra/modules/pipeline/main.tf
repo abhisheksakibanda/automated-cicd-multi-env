@@ -24,6 +24,22 @@ resource "aws_iam_role_policy_attachment" "codepipeline_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AWSCodePipeline_FullAccess"
 }
 
+resource "aws_iam_role_policy" "codepipeline_codestar_use" {
+  name = "${var.project_name}-codepipeline-codestar-use"
+  role = aws_iam_role.codepipeline_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "codestar-connections:UseConnection"
+        Resource = aws_codestarconnections_connection.github_connection.arn
+      }
+    ]
+  })
+}
+
 resource "aws_codestarconnections_connection" "github_connection" {
   name          = "${var.project_name}-gh-conn"
   provider_type = "GitHub"
