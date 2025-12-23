@@ -24,17 +24,37 @@ resource "aws_iam_role_policy_attachment" "codepipeline_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AWSCodePipeline_FullAccess"
 }
 
-resource "aws_iam_role_policy" "codepipeline_codestar_use" {
-  name = "${var.project_name}-codepipeline-codestar-use"
+resource "aws_iam_role_policy" "codepipeline_permissions" {
+  name = "${var.project_name}-codepipeline_permissions"
   role = aws_iam_role.codepipeline_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
+      # Allow CodePipeline to use the CodeStar connection
       {
         Effect   = "Allow"
         Action   = "codestar-connections:UseConnection"
         Resource = aws_codestarconnections_connection.github_connection.arn
+      },
+      # Permissions for S3 artifact bucket
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:ListBucket",
+          "s3:GetBucketLocation"
+        ]
+        Resource = aws_s3_bucket.artifact_bucket.arn
+      },
+      # Permissions for objects within the S3 bucket
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+          "s3:PutObject"
+        ]
+        Resource = "${aws_s3_bucket.artifact_bucket.arn}/*"
       }
     ]
   })
