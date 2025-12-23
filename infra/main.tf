@@ -2,6 +2,7 @@ module "iam" {
   source       = "./modules/iam"
   project_name = var.project_name
   aws_region = var.aws_region
+  artifact_bucket_arn = module.pipeline.artifact_bucket_arn
 }
 
 module "codebuild" {

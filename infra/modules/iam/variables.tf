@@ -10,3 +10,8 @@ variable "aws_region" {
   description = "AWS region where resources will be created"
 }
 
+variable "artifact_bucket_arn" {
+  type        = string
+  description = "ARN of the S3 bucket for CodeBuild artifacts"
+}
+

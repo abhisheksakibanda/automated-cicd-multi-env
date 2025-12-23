@@ -114,6 +114,35 @@ resource "aws_iam_role_policy" "codebuild_cloudwatch_logs" {
   })
 }
 
+resource "aws_iam_role_policy" "codebuild_s3_artifacts" {
+  name = "${var.project_name}-codebuild-s3-artifacts"
+  role = aws_iam_role.codebuild_service_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      # Bucket-level permissions
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:ListBucket"
+        ]
+        Resource = var.artifact_bucket_arn
+      },
+
+      # Object-level permissions
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion"
+        ]
+        Resource = "${var.artifact_bucket_arn}/*"
+      }
+    ]
+  })
+}
+
 
 # SNS topic policy to allow EventBridge to publish
 resource "aws_sns_topic_policy" "eventbridge_publish" {
