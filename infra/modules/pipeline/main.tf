@@ -145,7 +145,8 @@ resource "aws_codepipeline" "cicd_pipeline" {
       output_artifacts = ["test_output"]
 
       configuration = {
-        ProjectName = var.codebuild_test_project
+        ProjectName   = var.codebuild_test_project
+        PrimarySource = "source_output"
       }
     }
   }

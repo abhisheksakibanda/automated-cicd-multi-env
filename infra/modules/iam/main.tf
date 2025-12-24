@@ -135,7 +135,8 @@ resource "aws_iam_role_policy" "codebuild_s3_artifacts" {
         Effect = "Allow"
         Action = [
           "s3:GetObject",
-          "s3:GetObjectVersion"
+          "s3:GetObjectVersion",
+          "s3:PutObject"
         ]
         Resource = "${var.artifact_bucket_arn}/*"
       }
