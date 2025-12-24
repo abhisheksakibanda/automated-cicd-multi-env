@@ -7,24 +7,33 @@ phases:
     commands:
       - echo "Installing dependencies..."
       - pip install -r app/requirements.txt
-      - pip install pytest requests bandit coverage safety
-      - echo "Installing AWS CLI for Inspector integration..."
-      - pip install awscli boto3
+      - pip install pytest requests bandit coverage safety awscli boto3
 
   pre_build:
     commands:
-      - echo "Running unit tests..."
-      - coverage run -m pytest tests/
+      - echo "=== Running UNIT tests ==="
+      - coverage run -m pytest tests/test_app.py
       - coverage report
       - coverage xml
 
-      # If coverage < 80%, fail
+      # Coverage quality gate
       - COVERAGE=$(coverage report | grep TOTAL | awk '{print $4}' | sed 's/%//')
       - if [ "$COVERAGE" -lt 80 ]; then echo "Coverage below 80%! Failing."; exit 1; fi
 
   build:
     commands:
-      - echo "Packaging artifact..."
+      - echo "=== Starting application for integration tests ==="
+      - python app/app.py &   # or flask run / uvicorn main:app
+      - |
+        until curl -s http://localhost:5000/health; do
+          echo "Waiting for app to be ready..."
+          sleep 2
+        done
+
+      - echo "=== Running INTEGRATION tests ==="
+      - pytest tests/integration/
+
+      - echo "=== Packaging artifact ==="
       - rm -rf build
       - mkdir -p build/app
       - cp -r app/ build/app/
@@ -34,45 +43,45 @@ phases:
   post_build:
     commands:
       - echo "=== Running Security Scans ==="
-      
+
       # Bandit - Python code security scanning
-      - echo "Running Bandit security scan..."
+      - echo "Running Bandit..."
       - bandit -r app/ -f json -o bandit-output.json || true
       - bandit -r app/ -f txt || true
-      
+
       # Safety - Python dependency vulnerability scanning
-      - echo "Running Safety dependency vulnerability scan..."
+      - echo "Running Safety..."
       - safety check --json --output safety-output.json || true
       - safety check || true
-      
-      # Quality Gates
+
       - echo "=== Evaluating Quality Gates ==="
-      
-      # Check Bandit HIGH severity issues
+
+      # Bandit quality gate (fail on HIGH)
       - |
         if [ -f bandit-output.json ]; then
-          HIGH_SEVERITY=$(cat bandit-output.json | grep -c '"issue_severity": "HIGH"' || echo "0")
-          MEDIUM_SEVERITY=$(cat bandit-output.json | grep -c '"issue_severity": "MEDIUM"' || echo "0")
-          
+          HIGH=$(grep -c '"issue_severity": "HIGH"' bandit-output.json || echo "0")
+          MEDIUM=$(grep -c '"issue_severity": "MEDIUM"' bandit-output.json || echo "0")
+
           echo "Bandit Results:"
-          echo "  HIGH severity issues: $HIGH_SEVERITY"
-          echo "  MEDIUM severity issues: $MEDIUM_SEVERITY"
-          
-          if [ "$HIGH_SEVERITY" -gt 0 ]; then
+          echo "  HIGH severity issues: $HIGH"
+          echo "  MEDIUM severity issues: $MEDIUM"
+
+          if [ "$HIGH" -gt 0 ]; then
             echo "QUALITY GATE FAILED: High severity security vulnerabilities found!"
             exit 1
           fi
         else
           echo "Warning: bandit-output.json not found"
         fi
-      
-      # Check Safety dependency vulnerabilities
+
+      # Safety quality gate (fail on any vulnerabilities, and print JSON)
       - |
         if [ -f safety-output.json ]; then
-          VULN_COUNT=$(cat safety-output.json | grep -c '"vulnerability"' || echo "0")
+          VULN_COUNT=$(grep -c '"vulnerability"' safety-output.json || echo "0")
+
           echo "Safety Results:"
           echo "  Known vulnerabilities: $VULN_COUNT"
-          
+
           if [ "$VULN_COUNT" -gt 0 ]; then
             echo "QUALITY GATE FAILED: Known vulnerabilities in dependencies!"
             cat safety-output.json
@@ -81,7 +90,7 @@ phases:
         else
           echo "Warning: safety-output.json not found"
         fi
-      
+
       # AWS Inspector scan (if configured)
       - |
         if [ -f cicd/scripts/inspector_scan.sh ]; then
@@ -90,8 +99,9 @@ phases:
         else
           echo "Inspector scan script not found, skipping..."
         fi
-      
+
       - echo "All security scans passed!"
+
 
 artifacts:
   base-directory: build
