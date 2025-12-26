@@ -68,7 +68,7 @@ resource "aws_codedeploy_deployment_group" "dg" {
 
   blue_green_deployment_config {
     green_fleet_provisioning_option {
-      action = "DISCOVER_EXISTING"
+      action = "COPY_AUTO_SCALING_GROUP"
     }
 
     terminate_blue_instances_on_deployment_success {
