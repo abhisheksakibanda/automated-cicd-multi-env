@@ -164,6 +164,25 @@ resource "aws_sns_topic_policy" "eventbridge_publish" {
   })
 }
 
+resource "aws_sns_topic_policy" "cloudwatch_publish" {
+  arn = aws_sns_topic.cicd_notifications.arn
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowCloudWatchAlarmsPublish"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudwatch.amazonaws.com"
+        }
+        Action   = "sns:Publish"
+        Resource = aws_sns_topic.cicd_notifications.arn
+      }
+    ]
+  })
+}
+
 # IAM role for EC2 instances to read AWS Inspector findings
 resource "aws_iam_role" "ec2_inspector_role" {
   name = "${var.project_name}-ec2-inspector-role"
