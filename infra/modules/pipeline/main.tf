@@ -72,7 +72,8 @@ resource "aws_iam_role_policy" "codepipeline_permissions" {
           "codedeploy:CreateDeployment",
           "codedeploy:GetDeployment",
           "codedeploy:GetDeploymentGroup",
-          "codedeploy:GetDeploymentConfig"
+          "codedeploy:GetDeploymentConfig",
+          "codedeploy:RegisterApplicationRevision"
         ]
         Resource = "*"
       }
