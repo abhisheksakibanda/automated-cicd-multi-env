@@ -8,7 +8,7 @@ resource "aws_autoscaling_group" "asg" {
   for_each = toset(var.environments)
 
   name             = "${var.project_name}-${each.key}-asg"
-  max_size         = 1
+  max_size         = 2
   min_size         = 1
   desired_capacity = 1
 
@@ -66,6 +66,10 @@ resource "aws_codedeploy_deployment_group" "dg" {
   }
 
   blue_green_deployment_config {
+    green_fleet_provisioning_option {
+      action = "DISCOVER_EXISTING"
+    }
+
     terminate_blue_instances_on_deployment_success {
       action                           = "TERMINATE"
       termination_wait_time_in_minutes = 5
