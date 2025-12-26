@@ -77,9 +77,10 @@ resource "aws_codedeploy_deployment_group" "dg" {
   }
 
   alarm_configuration {
-    enabled = true
-    alarms  = [aws_cloudwatch_metric_alarm.app_unhealthy[each.key].alarm_name]
+    enabled = each.key == "prod"
+    alarms  = each.key == "prod" ? [aws_cloudwatch_metric_alarm.app_unhealthy[each.key].alarm_name] : []
   }
+
 
   load_balancer_info {
     target_group_info {
@@ -99,25 +100,28 @@ resource "aws_cloudwatch_metric_alarm" "app_unhealthy" {
   for_each = toset(var.environments)
 
   alarm_name          = "${var.project_name}-${each.key}-app-unhealthy-alarm"
-  alarm_description   = "Triggers CodeDeploy rollback if ${each.key} application becomes unhealthy"
+  alarm_description   = "Triggers rollback if app stays unhealthy after startup"
   comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
   metric_name         = "UnHealthyHostCount"
   namespace           = "AWS/ApplicationELB"
-  period              = 60
-  statistic           = "Average"
+  statistic           = "Maximum"
   threshold           = 0
-  treat_missing_data  = "breaching"
 
-  # For ALB metrics, we need TargetGroup dimension (name)
+  period              = 60
+  evaluation_periods  = 3
+  datapoints_to_alarm = 2
+
+  treat_missing_data = "notBreaching"
+
   dimensions = {
     TargetGroup = var.target_group_blue[each.key]
   }
 
-  alarm_actions = var.sns_topic_arn != "" ? [var.sns_topic_arn] : []
+  alarm_actions = each.key == "prod" ? [var.sns_topic_arn] : []
 
   tags = {
     Environment = each.key
     Purpose     = "CodeDeployRollback"
   }
 }
+
