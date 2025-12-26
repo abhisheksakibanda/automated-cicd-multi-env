@@ -18,6 +18,7 @@ resource "aws_autoscaling_group" "asg" {
   }
   vpc_zone_identifier = var.subnet_ids
   health_check_type   = "ELB"
+  health_check_grace_period = 120
 }
 
 resource "aws_launch_template" "launch_template" {
