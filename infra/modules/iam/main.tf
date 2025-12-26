@@ -43,6 +43,29 @@ resource "aws_iam_role_policy_attachment" "codedeploy_cloudwatch" {
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchReadOnlyAccess"
 }
 
+resource "aws_iam_role_policy" "codedeploy_autoscaling" {
+  name = "${var.project_name}-codedeploy-autoscaling"
+  role = aws_iam_role.codedeploy_service_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "autoscaling:CreateAutoScalingGroup",
+          "autoscaling:UpdateAutoScalingGroup",
+          "autoscaling:DeleteAutoScalingGroup",
+          "autoscaling:DescribeAutoScalingGroups",
+          "autoscaling:SetDesiredCapacity",
+          "autoscaling:DescribeScalingActivities"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 # SNS Topic for CI/CD notifications (shared resource)
 resource "aws_sns_topic" "cicd_notifications" {
   name = "${var.project_name}-cicd-notifications"
