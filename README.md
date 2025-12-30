@@ -197,7 +197,7 @@ GitHub Repository
 - Terraform >= 1.5.0
 - AWS CLI configured
 - GitHub account and repository access
-- Python 3.14+ (for local testing)
+- Python 3.12+ (for local testing)
 
 ## Setup Instructions
 
@@ -247,7 +247,7 @@ The pipeline should automatically connect to GitHub. Verify in AWS CodePipeline 
 ### Build Phase (CodeBuild)
 
 1. **Install Phase:**
-   - Install Python 3.14
+   - Install Python 3.12
    - Install application dependencies
    - Install testing tools (pytest, bandit, coverage)
 
