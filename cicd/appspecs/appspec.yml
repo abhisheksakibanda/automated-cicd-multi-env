@@ -4,7 +4,7 @@ os: linux
 
 files:
   - source: /
-    destination: /home/ec2-user/app
+    destination: /home/ec2-user
 
 hooks:
   BeforeInstall:
