@@ -1,7 +1,7 @@
 module "iam" {
-  source       = "./modules/iam"
-  project_name = var.project_name
-  aws_region = var.aws_region
+  source              = "./modules/iam"
+  project_name        = var.project_name
+  aws_region          = var.aws_region
   artifact_bucket_arn = module.pipeline.artifact_bucket_arn
 }
 
@@ -27,6 +27,7 @@ module "alb" {
 module "codedeploy" {
   source = "./modules/codedeploy"
 
+  aws_region   = var.aws_region
   project_name = var.project_name
   environments = ["dev", "staging", "prod"]
 

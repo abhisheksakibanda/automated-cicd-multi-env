@@ -53,12 +53,9 @@ resource "aws_iam_role_policy" "codedeploy_autoscaling" {
       {
         Effect = "Allow"
         Action = [
-          "autoscaling:CreateAutoScalingGroup",
-          "autoscaling:UpdateAutoScalingGroup",
-          "autoscaling:DeleteAutoScalingGroup",
-          "autoscaling:DescribeAutoScalingGroups",
-          "autoscaling:SetDesiredCapacity",
-          "autoscaling:DescribeScalingActivities"
+          "iam:PassRole",
+          "ec2:CreateTags",
+          "ec2:RunInstances"
         ]
         Resource = "*"
       }

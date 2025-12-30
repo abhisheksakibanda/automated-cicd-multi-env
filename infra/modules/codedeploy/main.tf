@@ -16,8 +16,8 @@ resource "aws_autoscaling_group" "asg" {
     id      = aws_launch_template.launch_template[each.key].id
     version = "$Latest"
   }
-  vpc_zone_identifier = var.subnet_ids
-  health_check_type   = "ELB"
+  vpc_zone_identifier       = var.subnet_ids
+  health_check_type         = "ELB"
   health_check_grace_period = 120
 }
 
@@ -44,7 +44,22 @@ resource "aws_launch_template" "launch_template" {
   iam_instance_profile {
     name = var.ec2_inspector_instance_profile_name
   }
+  user_data = base64encode(<<-EOF
+    #!/bin/bash
+    set -eux
 
+    yum update -y
+    yum install -y ruby wget
+
+    cd /home/ec2-user
+    wget https://aws-codedeploy-${var.aws_region}.s3.${var.aws_region}.amazonaws.com/latest/install
+    chmod +x install
+    ./install auto
+
+    systemctl enable codedeploy-agent
+    systemctl start codedeploy-agent
+  EOF
+  )
 }
 
 # Deployment Groups for Blue/Green
