@@ -204,8 +204,8 @@ resource "aws_sns_topic_policy" "cloudwatch_publish" {
 }
 
 # IAM role for EC2 instances to read AWS Inspector findings
-resource "aws_iam_role" "ec2_inspector_role" {
-  name = "${var.project_name}-ec2-inspector-role"
+resource "aws_iam_role" "ec2_instance_role" {
+  name = "${var.project_name}-ec2-instance-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -219,9 +219,9 @@ resource "aws_iam_role" "ec2_inspector_role" {
   })
 }
 
-resource "aws_iam_role_policy" "ec2_inspector_policy" {
-  name = "${var.project_name}-ec2-inspector-policy"
-  role = aws_iam_role.ec2_inspector_role.id
+resource "aws_iam_role_policy" "ec2_instance_policy" {
+  name = "${var.project_name}-ec2-instance-policy"
+  role = aws_iam_role.ec2_instance_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -240,12 +240,19 @@ resource "aws_iam_role_policy" "ec2_inspector_policy" {
           "sts:GetCallerIdentity"
         ]
         Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:GetObject"
+        ],
+        Resource = "${var.artifact_bucket_arn}/*"
       }
     ]
   })
 }
 
-resource "aws_iam_instance_profile" "ec2_inspector_profile" {
-  name = "${var.project_name}-ec2-inspector-profile"
-  role = aws_iam_role.ec2_inspector_role.name
+resource "aws_iam_instance_profile" "ec2_instance_profile" {
+  name = "${var.project_name}-ec2-instance-profile"
+  role = aws_iam_role.ec2_instance_role.name
 }

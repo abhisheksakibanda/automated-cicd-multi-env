@@ -38,7 +38,7 @@ module "codedeploy" {
   target_group_blue = module.alb.target_group_blue
   sns_topic_arn     = module.iam.sns_topic_arn
 
-  ec2_inspector_instance_profile_name = module.iam.ec2_inspector_instance_profile_name
+  ec2_inspector_instance_profile_name = module.iam.ec2_instance_profile_name
 }
 
 module "pipeline" {
