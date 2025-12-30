@@ -51,8 +51,8 @@ phases:
 
       # Safety - Python dependency vulnerability scanning
       - echo "Running Safety..."
-      - safety check --json --output safety-output.json || true
-      - safety check || true
+      - safety scan --output json > safety-output.json || true
+      - safety scan || true
 
       - echo "=== Evaluating Quality Gates ==="
 
