@@ -28,7 +28,7 @@ if [ ! -x "$PYTHON_BIN" ]; then
   sudo tar xzf Python-${PYTHON_VERSION}.tgz
 
   cd Python-${PYTHON_VERSION}
-  sudo ./configure --enable-optimizations
+  sudo ./configure
   sudo make altinstall
 
   echo "Python $PYTHON_VERSION installed successfully"
