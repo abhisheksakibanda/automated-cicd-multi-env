@@ -1,9 +1,10 @@
 #!/bin/bash
 set -e
 
-which python3
-python3 --version
-pip3 --version
+cd /home/ec2-user/app/app
 
-cd /home/ec2-user/app/app/
-pip3 install -r requirements.txt
+/usr/local/bin/python3.12 -m venv venv
+source venv/bin/activate
+
+pip install --upgrade pip setuptools wheel
+pip install -r requirements.txt
