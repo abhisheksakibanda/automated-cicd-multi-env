@@ -1,27 +1,20 @@
 #!/bin/bash
-# BeforeAllowTraffic hook - runs before traffic is shifted to new instances
-# This is the pre-traffic validation phase in Blue/Green deployment
+set -e
 
 echo "BeforeAllowTraffic: Preparing for traffic shift..."
 echo "Current time: $(date)"
 
-# Verify application is running
-if ! pgrep -f "python3 app.py" > /dev/null; then
-    echo "ERROR: Application is not running!"
-    exit 1
-fi
+echo "Performing final health check before allowing traffic..."
 
-# Perform final health check before allowing traffic
-echo "Performing final health check..."
-for i in {1..5}; do
-    if curl -f http://localhost:5000/health > /dev/null 2>&1; then
-        echo "Health check passed (attempt $i/5)"
+for i in {1..10}; do
+    if curl -sf http://localhost:5000/health > /dev/null; then
+        echo "Health check passed (attempt $i/10)"
         exit 0
     fi
-    echo "Health check failed (attempt $i/5), retrying..."
-    sleep 2
+
+    echo "Health check failed (attempt $i/10), retrying..."
+    sleep 3
 done
 
-echo "ERROR: Health check failed after 5 attempts"
+echo "ERROR: Application failed health checks before traffic shift"
 exit 1
-
