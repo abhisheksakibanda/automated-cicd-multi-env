@@ -31,8 +31,10 @@ module "codedeploy" {
   project_name = var.project_name
   environments = ["dev", "staging", "prod"]
 
+  vpc_id              = var.vpc_id
   subnet_ids          = var.private_subnets
   codedeploy_role_arn = module.iam.codedeploy_role_arn
+  alb_security_group_ids = module.alb.alb_security_group_ids
 
   target_group_blue = module.alb.target_group_blue
   sns_topic_arn     = module.iam.sns_topic_arn

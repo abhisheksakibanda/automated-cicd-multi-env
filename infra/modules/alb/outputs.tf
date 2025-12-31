@@ -22,3 +22,7 @@ output "target_group_green_arn" {
 output "alb_dns" {
   value = { for k, v in aws_lb.this : k => v.dns_name }
 }
+
+output "alb_security_group_ids" {
+  value = { for k, v in aws_security_group.alb_sg : k => v.id }
+}

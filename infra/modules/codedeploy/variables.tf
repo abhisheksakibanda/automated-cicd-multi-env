@@ -2,6 +2,14 @@ variable "aws_region" {
   type = string
 }
 
+variable "vpc_id" {
+  type = string
+}
+
+variable "alb_security_group_ids" {
+    type = map(string)
+}
+
 variable "project_name" {
   type = string
 }

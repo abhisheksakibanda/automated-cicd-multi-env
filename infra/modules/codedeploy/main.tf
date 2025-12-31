@@ -25,6 +25,28 @@ data "aws_ssm_parameter" "al2023_ami" {
   name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
 }
 
+resource "aws_security_group" "ec2" {
+  for_each = toset(var.environments)
+
+  name        = "${var.project_name}-${each.key}-ec2-sg"
+  description = "EC2 SG for ${each.key}"
+  vpc_id      = var.vpc_id
+}
+
+resource "aws_security_group_rule" "alb_to_ec2" {
+  for_each = toset(var.environments)
+
+  type                     = "ingress"
+  from_port                = 5000
+  to_port                  = 5000
+  protocol                 = "tcp"
+
+  security_group_id        = aws_security_group.ec2[each.key].id
+  source_security_group_id = var.alb_security_group_ids[each.key]
+
+  description = "Allow ALB to reach EC2 in ${each.key}"
+}
+
 resource "aws_launch_template" "launch_template" {
   for_each = toset(var.environments)
 
@@ -35,6 +57,9 @@ resource "aws_launch_template" "launch_template" {
   network_interfaces {
     associate_public_ip_address = true
     subnet_id                   = var.subnet_ids[0]
+    security_groups = [
+      aws_security_group.ec2[each.key].id
+    ]
   }
 
   tag_specifications {
