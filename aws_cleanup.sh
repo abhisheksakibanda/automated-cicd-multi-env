@@ -5,7 +5,7 @@ set -e
 REGION=${AWS_REGION:-us-east-1}
 
 echo "==============================="
-echo " AWS DEMO CLEANUP SCRIPT"
+echo " AWS CLEANUP SCRIPT"
 echo " Region: $REGION"
 # echo " Time: $(date)"
 echo "==============================="
