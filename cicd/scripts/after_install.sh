@@ -15,3 +15,6 @@ which python
 
 pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
+
+echo "Fixing ownership for application files..."
+chown -R ec2-user:ec2-user /home/ec2-user
