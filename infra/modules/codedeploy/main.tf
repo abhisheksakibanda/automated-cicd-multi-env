@@ -21,11 +21,15 @@ resource "aws_autoscaling_group" "asg" {
   health_check_grace_period = 120
 }
 
+data "aws_ssm_parameter" "al2023_ami" {
+  name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+}
+
 resource "aws_launch_template" "launch_template" {
   for_each = toset(var.environments)
 
   name_prefix   = "${var.project_name}-${each.key}-lt"
-  image_id      = var.ami_id
+  image_id      = data.aws_ssm_parameter.al2023_ami.value
   instance_type = "t2.micro"
 
   network_interfaces {

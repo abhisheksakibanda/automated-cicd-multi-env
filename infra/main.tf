@@ -32,7 +32,6 @@ module "codedeploy" {
   environments = ["dev", "staging", "prod"]
 
   subnet_ids          = var.private_subnets
-  ami_id              = "ami-0c02fb55956c7d316"
   codedeploy_role_arn = module.iam.codedeploy_role_arn
 
   target_group_blue = module.alb.target_group_blue

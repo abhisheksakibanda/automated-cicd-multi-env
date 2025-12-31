@@ -11,7 +11,7 @@ variable "environments" {
 variable "subnet_ids" {
   type = list(string)
 }
-variable "ami_id" {}
+
 variable "codedeploy_role_arn" {}
 
 variable "target_group_blue" {
