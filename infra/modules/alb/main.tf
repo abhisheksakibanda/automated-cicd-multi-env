@@ -1,7 +1,7 @@
 locals {
   envs = var.environments
   # Shorten project name for resource names (AWS has 32 char limit for ALB/target groups)
-  short_name = substr(var.project_name, 0, min(15, length(var.project_name)))
+  short_name = substr(var.project_name, 0, min(14, length(var.project_name)))
 }
 
 # SECURITY GROUP

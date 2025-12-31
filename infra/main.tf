@@ -1,3 +1,20 @@
+locals {
+  env_settings = {
+    dev = {
+      rollback_enabled   = false
+      alarm_eval_periods = 4
+    }
+    staging = {
+      rollback_enabled   = false
+      alarm_eval_periods = 3
+    }
+    prod = {
+      rollback_enabled   = true
+      alarm_eval_periods = 3
+    }
+  }
+}
+
 module "iam" {
   source              = "./modules/iam"
   project_name        = var.project_name
@@ -30,14 +47,16 @@ module "codedeploy" {
   aws_region   = var.aws_region
   project_name = var.project_name
   environments = ["dev", "staging", "prod"]
+  env_settings = local.env_settings
 
-  vpc_id              = var.vpc_id
-  subnet_ids          = var.private_subnets
-  codedeploy_role_arn = module.iam.codedeploy_role_arn
+  vpc_id                 = var.vpc_id
+  subnet_ids             = var.private_subnets
+  codedeploy_role_arn    = module.iam.codedeploy_role_arn
   alb_security_group_ids = module.alb.alb_security_group_ids
 
-  target_group_blue = module.alb.target_group_blue
-  sns_topic_arn     = module.iam.sns_topic_arn
+  target_group_blue      = module.alb.target_group_blue
+  target_group_blue_arns = module.alb.target_group_blue_arn
+  sns_topic_arn          = module.iam.sns_topic_arn
 
   ec2_inspector_instance_profile_name = module.iam.ec2_instance_profile_name
 }
@@ -70,6 +89,7 @@ module "monitoring" {
   project_name  = var.project_name
   pipeline_name = module.pipeline.pipeline_name
   aws_region    = var.aws_region
+  env_settings  = local.env_settings
 
   codebuild_project_dev     = module.codebuild.codebuild_project_names["dev"]
   codebuild_project_staging = module.codebuild.codebuild_project_names["staging"]

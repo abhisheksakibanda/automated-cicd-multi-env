@@ -125,7 +125,7 @@ resource "aws_codedeploy_deployment_group" "dg" {
 
     terminate_blue_instances_on_deployment_success {
       action                           = "TERMINATE"
-      termination_wait_time_in_minutes = 5
+      termination_wait_time_in_minutes = 2
     }
 
     deployment_ready_option {
@@ -134,9 +134,9 @@ resource "aws_codedeploy_deployment_group" "dg" {
   }
 
   alarm_configuration {
-    enabled = each.key == "prod"
-    alarms  = each.key == "prod" ? [aws_cloudwatch_metric_alarm.app_unhealthy[each.key].alarm_name] : []
-  }
+  enabled = var.env_settings[each.key].rollback_enabled
+  alarms  = var.env_settings[each.key].rollback_enabled ? [aws_cloudwatch_metric_alarm.app_unhealthy[each.key].alarm_name] : []
+}
 
 
   load_balancer_info {
@@ -154,10 +154,9 @@ resource "aws_codedeploy_deployment_group" "dg" {
 # CloudWatch alarms for application health (rollback triggers)
 # These alarms monitor target group health and trigger CodeDeploy rollback
 resource "aws_cloudwatch_metric_alarm" "app_unhealthy" {
-  for_each = toset(var.environments)
+  for_each = var.target_group_blue_arns
 
   alarm_name          = "${var.project_name}-${each.key}-app-unhealthy-alarm"
-  alarm_description   = "Triggers rollback if app stays unhealthy after startup"
   comparison_operator = "GreaterThanThreshold"
   metric_name         = "UnHealthyHostCount"
   namespace           = "AWS/ApplicationELB"
@@ -165,20 +164,18 @@ resource "aws_cloudwatch_metric_alarm" "app_unhealthy" {
   threshold           = 0
 
   period              = 60
-  evaluation_periods  = 3
+  evaluation_periods  = var.env_settings[each.key].alarm_eval_periods
   datapoints_to_alarm = 2
 
-  treat_missing_data = "notBreaching"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [var.sns_topic_arn]
 
   dimensions = {
-    TargetGroup = var.target_group_blue[each.key]
+    TargetGroup  = split("/", each.value)[1]
+    LoadBalancer = split("/", each.value)[0]
   }
-
-  alarm_actions = each.key == "prod" ? [var.sns_topic_arn] : []
 
   tags = {
     Environment = each.key
-    Purpose     = "CodeDeployRollback"
   }
 }
-

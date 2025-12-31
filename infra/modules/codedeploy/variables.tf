@@ -26,6 +26,11 @@ variable "target_group_blue" {
   type = map(string)
 }
 
+variable "target_group_blue_arns" {
+  type = map(string)
+}
+
+
 variable "sns_topic_arn" {
   type        = string
   description = "SNS topic ARN for alarm notifications"
@@ -35,4 +40,12 @@ variable "sns_topic_arn" {
 variable "ec2_inspector_instance_profile_name" {
   type        = string
   description = "EC2 Inspector Instance Profile Name"
+}
+
+variable "env_settings" {
+  description = "Environment-specific deployment and alarm behavior"
+  type = map(object({
+    rollback_enabled     = bool
+    alarm_eval_periods   = number
+  }))
 }

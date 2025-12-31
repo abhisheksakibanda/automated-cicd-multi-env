@@ -63,3 +63,12 @@ variable "codedeploy_deployment_groups" {
   description = "Map of deployment groups by environment"
   default     = {}
 }
+
+variable "env_settings" {
+  description = "Environment-specific deployment and alarm behavior"
+  type = map(object({
+    rollback_enabled     = bool
+    alarm_eval_periods   = number
+  }))
+}
+

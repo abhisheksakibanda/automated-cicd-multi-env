@@ -129,27 +129,31 @@ resource "aws_cloudwatch_metric_alarm" "app_unhealthy_alarm" {
   for_each = var.target_group_blue_arns
 
   alarm_name          = "${var.project_name}-${each.key}-app-unhealthy-alarm"
-  alarm_description   = "Triggers rollback if ${each.key} application becomes unhealthy"
+  alarm_description   = "Application health alarm for ${each.key}"
   comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
   metric_name         = "UnHealthyHostCount"
   namespace           = "AWS/ApplicationELB"
-  period              = 60
-  statistic           = "Average"
+  statistic           = "Maximum"
   threshold           = 0
-  treat_missing_data  = "breaching"
+
+  period              = 60
+  evaluation_periods  = var.env_settings[each.key].alarm_eval_periods
+  datapoints_to_alarm = 2
+
+  treat_missing_data  = "notBreaching"
   alarm_actions       = [local.sns_topic_arn]
 
   dimensions = {
-    TargetGroup = split("/", each.value)[1]  # Extract target group name from ARN
-    LoadBalancer = split("/", each.value)[0]  # Extract load balancer from ARN
+    TargetGroup  = split("/", each.value)[1]
+    LoadBalancer = split("/", each.value)[0]
   }
 
   tags = {
     Environment = each.key
-    Purpose     = "CodeDeployRollback"
+    Purpose     = "HealthMonitoring"
   }
 }
+
 
 # HTTP 5xx error alarm for application health
 resource "aws_cloudwatch_metric_alarm" "app_5xx_alarm" {
