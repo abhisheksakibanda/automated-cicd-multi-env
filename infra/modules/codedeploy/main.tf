@@ -31,15 +31,36 @@ resource "aws_security_group" "ec2" {
   name        = "${var.project_name}-${each.key}-ec2-sg"
   description = "EC2 SG for ${each.key}"
   vpc_id      = var.vpc_id
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 resource "aws_security_group_rule" "alb_to_ec2" {
   for_each = toset(var.environments)
 
-  type                     = "ingress"
-  from_port                = 5000
-  to_port                  = 5000
-  protocol                 = "tcp"
+  type      = "ingress"
+  from_port = 5000
+  to_port   = 5000
+  protocol  = "tcp"
+
+  security_group_id        = aws_security_group.ec2[each.key].id
+  source_security_group_id = var.alb_security_group_ids[each.key]
+
+  description = "Allow ALB to reach EC2 in ${each.key}"
+}
+
+resource "aws_security_group_rule" "ec2_outbound" {
+  for_each = toset(var.environments)
+
+  type      = "ingress"
+  from_port = 5000
+  to_port   = 5000
+  protocol  = "tcp"
 
   security_group_id        = aws_security_group.ec2[each.key].id
   source_security_group_id = var.alb_security_group_ids[each.key]
@@ -77,14 +98,15 @@ resource "aws_launch_template" "launch_template" {
     #!/bin/bash
     set -eux
 
-    yum update -y
-    yum install -y ruby wget
+    dnf update -y
+    dnf install -y ruby wget
 
     cd /home/ec2-user
     wget https://aws-codedeploy-${var.aws_region}.s3.${var.aws_region}.amazonaws.com/latest/install
     chmod +x install
     ./install auto
 
+    systemctl daemon-reload
     systemctl enable codedeploy-agent
     systemctl start codedeploy-agent
   EOF
