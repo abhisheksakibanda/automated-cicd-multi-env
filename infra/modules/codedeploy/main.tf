@@ -87,6 +87,12 @@ resource "aws_launch_template" "launch_template" {
     dnf update -y
     dnf install -y ruby wget
 
+    cat <<EOT >/etc/myapp.env
+    APP_ENV=${each.key}
+    EOT
+
+    chmod 644 /etc/myapp.env
+
     cd /home/ec2-user
     wget https://aws-codedeploy-${var.aws_region}.s3.${var.aws_region}.amazonaws.com/latest/install
     chmod +x install
