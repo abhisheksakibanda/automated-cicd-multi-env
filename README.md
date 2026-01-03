@@ -1,406 +1,282 @@
 # Automated CI/CD Pipeline with Multi-Environment Deployment
 
-A fully automated CI/CD pipeline that handles code compilation, testing, and deployment across development, staging, and production environments using AWS CodePipeline, CodeBuild, and CodeDeploy.
+This project implements a **fully automated CI/CD pipeline** for a Python web application using **AWS CodePipeline, CodeBuild, and CodeDeploy**, supporting deployments across **development, staging, and production** environments.
+
+The pipeline demonstrates real-world DevOps practices including automated testing, security scanning, Blue/Green deployments, and automatic rollback based on application health.
+
+---
 
 ## Table of Contents
 
-- [Project Overview](#project-overview)
-- [Repository Structure](#repository-structure)
-- [Branching Strategy](#branching-strategy)
-- [Branch Protection Rules](#branch-protection-rules)
-- [Architecture](#architecture)
-- [Prerequisites](#prerequisites)
-- [Setup Instructions](#setup-instructions)
-- [Pipeline Workflow](#pipeline-workflow)
-- [Troubleshooting](#troubleshooting)
-- [Rollback Procedures](#rollback-procedures)
+* [Project Overview](#project-overview)
+* [Repository Structure](#repository-structure)
+* [Branching Strategy](#branching-strategy)
+* [Architecture Overview](#architecture-overview)
+* [CI/CD Pipeline Workflow](#cicd-pipeline-workflow)
+* [Quality Gates](#quality-gates)
+* [Monitoring and Rollback](#monitoring-and-rollback)
+* [Setup Instructions](#setup-instructions)
+* [Troubleshooting](#troubleshooting)
+
+---
 
 ## Project Overview
 
-This project demonstrates a production-ready CI/CD pipeline with:
-- **Multi-environment deployment** (dev, staging, production)
-- **Automated testing** (unit tests, integration tests, security scanning)
-- **Blue/Green deployments** with automated rollback
-- **Infrastructure as Code** using Terraform
-- **Comprehensive monitoring** with CloudWatch dashboards
+This project demonstrates a production-style CI/CD pipeline with the following capabilities:
+
+* Multi-environment deployment (dev, staging, prod)
+* Automated unit and integration testing
+* Security scanning and quality gates
+* Blue/Green deployments using AWS CodeDeploy
+* Automatic rollback using CloudWatch alarms
+* Infrastructure provisioning using Terraform
+* Notifications using Amazon SNS
+
+The goal is to show how application delivery can be automated end-to-end while maintaining safety, visibility, and control.
+
+---
 
 ## Repository Structure
 
 ```
 automated-cicd-multi-env/
-├── app/                          # Application code
-│   ├── app.py                   # Flask application
-│   └── requirements.txt         # Python dependencies
-├── cicd/                        # CI/CD configuration files
+├── app/                     # Application source code
+│   ├── app.py               # Flask application
+│   └── requirements.txt     # Python dependencies
+├── cicd/                    # CI/CD configuration
 │   ├── appspecs/
-│   │   └── appspec.yml         # CodeDeploy application specification
+│   │   └── appspec.yml      # CodeDeploy lifecycle definition
 │   ├── buildspecs/
-│   │   └── buildspec.yml       # CodeBuild build specification
-│   └── scripts/                # Deployment scripts
-│       ├── before_install.sh   # Pre-deployment cleanup
-│       ├── after_install.sh    # Dependency installation
-│       ├── start_server.sh     # Application startup
-│       └── validate.sh         # Health check validation
-├── infra/                       # Infrastructure as Code (Terraform)
-│   ├── main.tf                 # Main Terraform configuration
-│   ├── variables.tf            # Variable definitions
-│   ├── providers.tf            # Provider configuration
-│   ├── terraform.tfvars        # Variable values (not committed)
-│   └── modules/                # Terraform modules
-│       ├── alb/                # Application Load Balancer
-│       ├── codebuild/          # CodeBuild projects
-│       ├── codedeploy/         # CodeDeploy configuration
-│       ├── iam/                # IAM roles and policies
-│       ├── monitoring/         # CloudWatch dashboards and alarms
-│       └── pipeline/           # CodePipeline configuration
-└── tests/                       # Test suites
-    ├── test_app.py             # Unit tests
-    └── integration/
-        └── test_integration.py  # Integration tests
+│   │   ├── buildspec.yml    # Build + unit tests + security scans
+│   │   └── test_buildspec.yml # Integration tests
+│   └── scripts/             # Deployment and validation scripts
+├── infra/                   # Terraform infrastructure code
+│   ├── modules/
+│   │   ├── alb/             # Application Load Balancer
+│   │   ├── codebuild/       # CodeBuild projects
+│   │   ├── codedeploy/      # Blue/Green deployment groups + alarms
+│   │   ├── iam/             # IAM roles and policies
+│   │   ├── monitoring/      # Monitoring resources (minimal)
+│   │   ├── pipeline/        # CodePipeline definition
+│   │   └── security/        # AWS Inspector configuration
+│   └── main.tf              # Root Terraform configuration
+├── tests/
+│   ├── test_app.py          # Unit tests
+│   └── integration/
+│       └── test_integration.py # Integration tests
+└── docs/
+    ├── BRANCHING_STRATEGY.md
+    └── QUALITY_GATES.md
 ```
+
+---
 
 ## Branching Strategy
 
-This project uses a **three-branch strategy** aligned with the three deployment environments:
+This repository uses a **three-branch strategy** aligned with deployment environments:
 
-### Branches
+* **`dev`** – Development environment
 
-1. **`dev`** - Development Environment
-   - Active development branch
-   - Automatically deploys to development environment
-   - No branch protection (allows direct pushes for rapid iteration)
-   - Pipeline triggers on every push
+  * Active development branch
+  * Pipeline source stage is triggered from this branch
 
-2. **`staging`** - Staging Environment
-   - Pre-production testing environment
-   - Requires pull request from `dev` branch
-   - Automatically deploys to staging environment
-   - Protected branch (see [Branch Protection Rules](#branch-protection-rules))
+* **`staging`** – Staging / pre-production
 
-3. **`main`** - Production Environment
-   - Production-ready code
-   - Requires pull request from `staging` branch
-   - Automatically deploys to production environment
-   - Protected branch with strict rules (see [Branch Protection Rules](#branch-protection-rules))
+  * Changes promoted via pull request from `dev`
 
-### Workflow
+* **`main`** – Production
 
-```
-Feature Development → dev → staging → main (production)
-                      ↓        ↓         ↓
-                   Dev Env  Staging   Production
-```
+  * Changes promoted via pull request from `staging`
 
-**Typical Flow:**
-1. Developers work on feature branches or directly on `dev`
-2. Code is merged to `dev` → triggers deployment to **Development** environment
-3. After testing in dev, create PR: `dev` → `staging` → triggers deployment to **Staging** environment
-4. After staging validation, create PR: `staging` → `main` → triggers deployment to **Production** environment
+Branch protection rules are documented and enforce pull-request-based promotion for staging and production.
 
-## Branch Protection Rules
+See `docs/BRANCHING_STRATEGY.md` for full details.
 
-Branch protection rules ensure code quality and prevent direct pushes to critical branches.
+---
 
-### Staging Branch Protection
+## Architecture Overview
 
-**Branch:** `staging`
-
-**Rules:**
-- **Require a pull request before merging**
-  - Require 1 approval
-- **Require status checks to pass before merging**
-  - All CI/CD pipeline stages must pass
-  - Code must be up to date before merging
-
-**Purpose:** Ensures code is reviewed and tested before reaching staging environment.
-
-### Production (main) Branch Protection
-
-**Branch:** `main`
-
-**Rules:**
-- **Require a pull request before merging**
-  - Require 1 approval
-  - Dismiss stale pull request approvals when new commits are pushed
-- **Require status checks to pass before merging**
-  - All CI/CD pipeline stages must pass
-  - Code must be up to date before merging
-
-**Purpose:** Maximum protection for production code. Stale approvals are dismissed to ensure reviewers see the latest changes.
-
-### How to Work with Protected Branches
-
-1. **Create a Pull Request:**
-   ```bash
-   # From your feature branch or dev
-   git checkout -b feature/your-feature
-   # Make changes and commit
-   git push origin feature/your-feature
-   # Create PR on GitHub: feature/your-feature → staging (or staging → main)
-   ```
-
-2. **Wait for CI/CD Pipeline:**
-   - Pipeline automatically runs on PR creation
-   - All tests and security scans must pass
-
-3. **Get Approval:**
-   - At least 1 team member must approve the PR
-   - For `main` branch, approvals are dismissed if new commits are added
-
-4. **Merge:**
-   - Once approved and all checks pass, merge the PR
-   - Deployment to the target environment will trigger automatically
-
-## Architecture
-
-### CI/CD Pipeline Flow
+### High-Level Flow
 
 ```
-GitHub Repository
-    ↓
-[Source Stage] - GitHub webhook triggers pipeline
-    ↓
-[Build Stage] - CodeBuild compiles, tests, and packages
-    ├── Install dependencies
-    ├── Run unit tests (coverage ≥ 80%)
-    ├── Security scan (Bandit)
-    ├── Run integration tests
-    └── Package artifacts
-    ↓
-[Test Stage] - Automated testing in isolated environment
-    ↓
-[Deploy to Dev] - CodeDeploy Blue/Green deployment
-    ↓
-[Manual Approval] - Review dev deployment
-    ↓
-[Deploy to Staging] - CodeDeploy Blue/Green deployment
-    ↓
-[Manual Approval] - Review staging deployment
-    ↓
-[Deploy to Production] - CodeDeploy Blue/Green deployment
+GitHub (dev branch)
+        ↓
+AWS CodePipeline
+        ↓
+CodeBuild (Build + Unit Tests + Security Scans)
+        ↓
+CodeBuild (Integration Tests)
+        ↓
+CodeDeploy (Dev)
+        ↓
+CodeDeploy (Staging)
+        ↓
+Manual Approval
+        ↓
+CodeDeploy (Production)
 ```
 
-### AWS Services Used
+### Deployment Architecture
 
-- **AWS CodePipeline** - Orchestrates the CI/CD workflow
-- **AWS CodeBuild** - Builds, tests, and packages the application
-- **AWS CodeDeploy** - Deploys to EC2 instances using Blue/Green strategy
-- **Amazon EC2 & Auto Scaling** - Deployment targets
-- **Application Load Balancer (ALB)** - Traffic routing for Blue/Green deployments
-- **Amazon S3** - Stores pipeline artifacts
-- **AWS CloudWatch** - Monitoring, logging, and alerting
-- **Amazon SNS** - Pipeline notifications
+* EC2 instances are managed via Auto Scaling Groups
+* Application traffic is routed through an Application Load Balancer
+* Blue/Green deployments are handled by CodeDeploy
+* Health is validated via `/health` endpoint
+* CloudWatch alarms monitor ALB target group health
 
-## Prerequisites
+---
 
-- AWS Account with appropriate permissions
-- Terraform >= 1.5.0
-- AWS CLI configured
-- GitHub account and repository access
-- Python 3.12+ (for local testing)
+## CI/CD Pipeline Workflow
+
+### 1. Source Stage
+
+* CodePipeline pulls source code from GitHub using CodeStar Connections
+* Triggered on changes to the `dev` branch
+
+---
+
+### 2. Build Stage (CodeBuild)
+
+Executed using `buildspec.yml`:
+
+* Install dependencies
+* Run unit tests
+* Enforce **minimum 80% code coverage**
+* Run security scans:
+
+  * Bandit (static code analysis)
+  * Safety (dependency vulnerabilities)
+  * AWS Inspector (where enabled)
+* Package application and deployment artifacts
+
+**Pipeline fails immediately if any quality gate fails.**
+
+---
+
+### 3. Test Stage (CodeBuild – Isolated)
+
+Executed using `test_buildspec.yml`:
+
+* Start application from packaged artifact
+* Run integration tests against live HTTP endpoints
+* Validate response time and API correctness
+
+---
+
+### 4. Deploy Stage (CodeDeploy)
+
+Deployments are performed using **Blue/Green strategy**:
+
+* New version deployed to green environment
+* Application validated before traffic switch
+* Traffic switched to green after validation
+* Blue instances terminated on success
+
+Deployment lifecycle is defined in `appspec.yml`.
+
+---
+
+### 5. Manual Approval
+
+* A manual approval step is required **before production deployment**
+* Ensures human review before live release
+
+---
+
+## Quality Gates
+
+Quality gates ensure only safe and verified code is deployed:
+
+* Unit test coverage ≥ 80%
+* No HIGH severity Bandit findings
+* No known vulnerable dependencies
+* All integration tests must pass
+* Application health validation during deployment
+
+See `docs/QUALITY_GATES.md` for full details.
+
+---
+
+## Monitoring and Rollback
+
+### Monitoring
+
+* Application health monitored via ALB target group metrics
+* Build and pipeline logs available in CloudWatch Logs
+* Pipeline and deployment events published to SNS
+* EventBridge captures CodeBuild state changes
+
+### Automatic Rollback
+
+Deployments automatically roll back when:
+
+* Application health checks fail
+* CloudWatch alarms detect unhealthy targets
+* Deployment validation hooks fail
+
+Rollback is handled directly by CodeDeploy.
+
+---
 
 ## Setup Instructions
 
-### 1. Clone the Repository
+### Prerequisites
+
+* AWS account
+* Terraform ≥ 1.5
+* AWS CLI configured
+* GitHub repository access
+* Python 3.12 (for local testing)
+
+---
+
+### Deployment Steps
 
 ```bash
-git clone https://github.com/abhisheksakibanda/automated-cicd-multi-env.git
+git clone https://github.com/<your-username>/automated-cicd-multi-env.git
 cd automated-cicd-multi-env
-```
 
-### 2. Configure Terraform Variables
-
-Create or update `infra/terraform.tfvars`:
-
-```hcl
-project_name = "automated-cicd-multi-env"
-github_token = "your-github-oauth-token"
-
-# VPC Configuration (use existing or create new)
-vpc_id         = "vpc-xxxxxxxxx"
-public_subnets = ["subnet-xxxxx", "subnet-yyyyy"]
-private_subnets = ["subnet-zzzzz", "subnet-wwwww"]
-```
-
-### 3. Update GitHub Configuration
-
-Edit `infra/main.tf` and update:
-- `github_owner` - Your GitHub username
-- `github_repo` - Repository name (should match current repo)
-- `alert_email` - Email for SNS notifications
-
-### 4. Initialize and Apply Terraform
-
-```bash
 cd infra
 terraform init
 terraform plan
 terraform apply
 ```
 
-### 5. Configure GitHub Webhook (if needed)
+Ensure GitHub repository details and environment variables are correctly set in Terraform variables.
 
-The pipeline should automatically connect to GitHub. Verify in AWS CodePipeline console that the source stage is connected.
+---
 
-## Pipeline Workflow
+## Troubleshooting
 
-### Build Phase (CodeBuild)
+### Build Failures
 
-1. **Install Phase:**
-   - Install Python 3.12
-   - Install application dependencies
-   - Install testing tools (pytest, bandit, coverage)
+* Check unit test coverage
+* Review Bandit or Safety scan output
+* Inspect CodeBuild logs
 
-2. **Pre-Build Phase:**
-   - Run unit tests with coverage
-   - Generate coverage report
-   - **Quality Gate:** Fail if coverage < 80%
+### Deployment Failures
 
-3. **Build Phase:**
-   - Package application code
-   - Include appspec.yml and deployment scripts
-   - Create deployment artifact
+* Check CodeDeploy lifecycle logs on EC2
+* Verify `/health` endpoint availability
+* Review CloudWatch alarms and target group health
 
-4. **Post-Build Phase:**
-   - Start application for integration testing
-   - Run integration tests
-   - Run security scan (Bandit)
-   - **Quality Gate:** Fail if high-severity vulnerabilities found
+### Rollback Events
 
-### Deploy Phase (CodeDeploy)
+* Triggered automatically by CloudWatch alarms
+* Can also be triggered by redeploying a previous commit
 
-1. **BeforeInstall:**
-   - Stop existing application
-   - Clean up previous deployment
+---
 
-2. **AfterInstall:**
-   - Install application dependencies
-   - Prepare application directory
+## Summary
 
-3. **ApplicationStart:**
-   - Start Flask application
-   - Configure service
+This project demonstrates an end-to-end CI/CD pipeline with:
 
-4. **ValidateService:**
-   - Health check validation
-   - Verify application is responding
+* Automated testing and security enforcement
+* Safe Blue/Green deployments
+* Automatic rollback on failure
+* Infrastructure as Code
+* Clear promotion path across environments
 
-### Blue/Green Deployment
+It reflects real-world DevOps practices used in enterprise and regulated environments.
 
-- **Blue Environment:** Current production traffic
-- **Green Environment:** New deployment
-- Traffic is gradually shifted from Blue to Green
-- If validation fails, traffic remains on Blue (automatic rollback)
-- On success, Blue instances are terminated
-
-## 🐛 Troubleshooting
-
-### Pipeline Fails at Build Stage
-
-**Issue:** Build fails during unit tests
-- **Check:** Test coverage may be below 80%
-- **Solution:** Review coverage report, add tests to increase coverage
-
-**Issue:** Security scan fails
-- **Check:** Bandit found high-severity vulnerabilities
-- **Solution:** Review `bandit-output.json`, fix security issues
-
-### Pipeline Fails at Deploy Stage
-
-**Issue:** Deployment fails during ValidateService
-- **Check:** Application health check endpoint
-- **Solution:** 
-  - Verify `/health` endpoint is accessible
-  - Check EC2 instance logs: `/var/log/aws/codedeploy-agent/`
-  - Review CloudWatch Logs for application errors
-
-**Issue:** Rollback triggered
-- **Check:** CloudWatch alarms for application health
-- **Solution:** 
-  - Review application logs
-  - Check ALB target group health
-  - Verify application dependencies are installed
-
-### Common Issues
-
-1. **GitHub Connection Issues:**
-   - Verify OAuth token is valid
-   - Check CodePipeline source stage connection
-
-2. **IAM Permission Errors:**
-   - Ensure IAM roles have required permissions
-   - Review CloudWatch Logs for specific error messages
-
-3. **Artifact Not Found:**
-   - Verify S3 bucket exists and is accessible
-   - Check artifact store configuration in pipeline
-
-## Rollback Procedures
-
-### Automatic Rollback
-
-The pipeline automatically rolls back if:
-- CloudWatch alarms detect application health issues
-- Deployment validation fails
-- Health checks fail during traffic shifting
-
-### Manual Rollback
-
-1. **Via AWS Console:**
-   - Navigate to CodeDeploy → Deployments
-   - Find the failed deployment
-   - Click "Rollback" or redeploy previous successful version
-
-2. **Via Terraform:**
-   ```bash
-   # Revert to previous Terraform state
-   terraform state list
-   terraform apply -target=module.codedeploy
-   ```
-
-3. **Via Git:**
-   ```bash
-   # Revert to previous commit
-   git revert HEAD
-   git push origin <branch>
-   # Pipeline will redeploy previous version
-   ```
-
-### Rollback Verification
-
-After rollback:
-1. Check CloudWatch dashboard for deployment success
-2. Verify application health endpoint responds
-3. Review CloudWatch Logs for any errors
-4. Confirm traffic is routed to healthy instances
-
-## Monitoring
-
-### CloudWatch Dashboard
-
-Access the dashboard:
-- AWS Console → CloudWatch → Dashboards
-- Dashboard name: `automated-cicd-multi-env-cicd-dashboard`
-
-**Metrics Tracked:**
-- Pipeline execution success rate
-- Mean build duration
-- Deployment success rate
-- Recent deployment errors
-
-### SNS Notifications
-
-Receive email notifications for:
-- Pipeline failures
-- Deployment failures
-- CloudWatch alarm triggers
-
-### CloudWatch Logs Insights
-
-Query deployment logs:
-```sql
-fields @timestamp, @message 
-| filter @message like /error/ or /fail/ 
-| sort @timestamp desc 
-| limit 20
-```
+---

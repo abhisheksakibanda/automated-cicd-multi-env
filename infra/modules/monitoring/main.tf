@@ -123,37 +123,6 @@ resource "aws_cloudwatch_metric_alarm" "codebuild_fail_alarm" {
   }
 }
 
-# Application health alarms for CodeDeploy rollback triggers
-# These alarms monitor target group health for Blue/Green deployments
-resource "aws_cloudwatch_metric_alarm" "app_unhealthy_alarm" {
-  for_each = var.target_group_blue_arns
-
-  alarm_name          = "${var.project_name}-${each.key}-app-unhealthy-alarm"
-  alarm_description   = "Application health alarm for ${each.key}"
-  comparison_operator = "GreaterThanThreshold"
-  metric_name         = "UnHealthyHostCount"
-  namespace           = "AWS/ApplicationELB"
-  statistic           = "Maximum"
-  threshold           = 0
-
-  period              = 60
-  evaluation_periods  = var.env_settings[each.key].alarm_eval_periods
-  datapoints_to_alarm = 2
-
-  treat_missing_data  = "notBreaching"
-  alarm_actions       = [local.sns_topic_arn]
-
-  dimensions = {
-    TargetGroup  = split("/", each.value)[1]
-    LoadBalancer = split("/", each.value)[0]
-  }
-
-  tags = {
-    Environment = each.key
-    Purpose     = "HealthMonitoring"
-  }
-}
-
 
 # HTTP 5xx error alarm for application health
 resource "aws_cloudwatch_metric_alarm" "app_5xx_alarm" {
