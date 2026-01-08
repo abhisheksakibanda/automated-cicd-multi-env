@@ -90,11 +90,15 @@ This repository uses a **three-branch strategy** aligned with deployment environ
 
 Branch protection rules are documented and enforce pull-request-based promotion for staging and production.
 
-See `docs/BRANCHING_STRATEGY.md` for full details.
+See [`docs/BRANCHING_STRATEGY.md`](docs/BRANCHING_STRATEGY.md) for full details.
 
 ---
 
 ## Architecture Overview
+
+The following diagram illustrates the complete CI/CD and runtime architecture used in this project.
+
+![CI/CD Architecture](docs/architecture-diagram.png)
 
 ### High-Level Flow
 
@@ -113,7 +117,7 @@ CodeDeploy (Staging)
         ↓
 Manual Approval
         ↓
-CodeDeploy (Production)
+CodeDeploy (Production – Blue/Green)
 ```
 
 ### Deployment Architecture
@@ -204,11 +208,10 @@ See `docs/QUALITY_GATES.md` for full details.
 * Application health monitored via ALB target group metrics
 * Build and pipeline logs available in CloudWatch Logs
 * Pipeline and deployment events published to SNS
-* EventBridge captures CodeBuild state changes
 
 ### Automatic Rollback
 
-Deployments automatically roll back when:
+CodeDeploy automatically roll back when:
 
 * Application health checks fail
 * CloudWatch alarms detect unhealthy targets
@@ -241,6 +244,7 @@ terraform init
 terraform plan
 terraform apply
 ```
+The pipeline will automatically become active after Terraform completes and the CodeStar connection is authorized.
 
 Ensure GitHub repository details and environment variables are correctly set in Terraform variables.
 
