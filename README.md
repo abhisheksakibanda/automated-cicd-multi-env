@@ -197,7 +197,7 @@ Quality gates ensure only safe and verified code is deployed:
 * All integration tests must pass
 * Application health validation during deployment
 
-See `docs/QUALITY_GATES.md` for full details.
+See [`docs/QUALITY_GATES.md`](docs/QUALITY_GATES.md) for full details.
 
 ---
 
