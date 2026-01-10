@@ -13,6 +13,18 @@ locals {
       alarm_eval_periods = 3
     }
   }
+
+  codebuild_log_groups = [
+    for name in values(module.codebuild.codebuild_project_names) :
+    "/aws/codebuild/${name}"
+  ]
+
+  test_log_group = "/aws/codebuild/${module.codebuild.test_project_name}"
+
+  all_codebuild_log_groups = concat(
+    local.codebuild_log_groups,
+    [local.test_log_group]
+  )
 }
 
 module "iam" {
@@ -89,17 +101,16 @@ module "monitoring" {
   project_name  = var.project_name
   pipeline_name = module.pipeline.pipeline_name
   aws_region    = var.aws_region
-  env_settings  = local.env_settings
 
   codebuild_project_dev     = module.codebuild.codebuild_project_names["dev"]
   codebuild_project_staging = module.codebuild.codebuild_project_names["staging"]
   codebuild_project_prod    = module.codebuild.codebuild_project_names["prod"]
+  all_codebuild_log_groups  = local.all_codebuild_log_groups
 
   codedeploy_app               = module.codedeploy.codedeploy_app_name
   codedeploy_deployment_groups = module.codedeploy.deployment_groups
 
   target_group_blue_arns  = module.alb.target_group_blue_arn
-  target_group_green_arns = module.alb.target_group_green_arn
 
   sns_topic_arn    = module.iam.sns_topic_arn
   create_sns_topic = false

@@ -2,10 +2,12 @@ variable "project_name" {
   type        = string
   description = "Base name for the CI/CD project"
 }
+
 variable "pipeline_name" {
   type        = string
   description = "Name of the CodePipeline"
 }
+
 variable "aws_region" {
   type        = string
   description = "AWS region where resources will be created"
@@ -15,13 +17,20 @@ variable "codebuild_project_dev" {
   type        = string
   description = "CodeBuild project for the development environment"
 }
+
 variable "codebuild_project_staging" {
   type        = string
   description = "CodeBuild project for the staging environment"
 }
+
 variable "codebuild_project_prod" {
   type        = string
   description = "CodeBuild project for the production environment"
+}
+
+variable "all_codebuild_log_groups" {
+  type        = list(string)
+  description = "List of all CodeBuild log group names"
 }
 
 variable "codedeploy_app" {
@@ -52,23 +61,8 @@ variable "target_group_blue_arns" {
   default     = {}
 }
 
-variable "target_group_green_arns" {
-  type        = map(string)
-  description = "Map of green target group ARNs by environment"
-  default     = {}
-}
-
 variable "codedeploy_deployment_groups" {
   type        = map(string)
   description = "Map of deployment groups by environment"
   default     = {}
 }
-
-variable "env_settings" {
-  description = "Environment-specific deployment and alarm behavior"
-  type = map(object({
-    rollback_enabled     = bool
-    alarm_eval_periods   = number
-  }))
-}
-

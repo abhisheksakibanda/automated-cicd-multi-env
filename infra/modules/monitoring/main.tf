@@ -14,8 +14,8 @@ resource "aws_cloudwatch_dashboard" "dashboard" {
         "properties" : {
           "title" : "Pipeline Execution Success Rate",
           "metrics" : [
-            [ "AWS/CodePipeline", "SuccessfulExecutions", "PipelineName", var.pipeline_name ],
-            [ ".", "FailedExecutions", ".", ".", { "stat": "Sum", "id": "fail" } ]
+            ["AWS/CodePipeline", "SuccessfulExecutions", "PipelineName", var.pipeline_name],
+            [".", "FailedExecutions", ".", ".", { "stat" : "Sum", "id" : "fail" }]
           ],
           "view" : "timeSeries",
           "stacked" : false,
@@ -33,9 +33,9 @@ resource "aws_cloudwatch_dashboard" "dashboard" {
         "properties" : {
           "title" : "Mean Build Duration",
           "metrics" : [
-            [ "AWS/CodeBuild", "Duration", "ProjectName", var.codebuild_project_dev, { "stat": "Average", "label": "Dev" } ],
-            [ ".", "Duration", ".", var.codebuild_project_staging, { "stat": "Average", "label": "Staging" } ],
-            [ ".", "Duration", ".", var.codebuild_project_prod, { "stat": "Average", "label": "Prod" } ]
+            ["AWS/CodeBuild", "Duration", "ProjectName", var.codebuild_project_dev, { "stat" : "Average", "label" : "Dev" }],
+            [".", "Duration", ".", var.codebuild_project_staging, { "stat" : "Average", "label" : "Staging" }],
+            [".", "Duration", ".", var.codebuild_project_prod, { "stat" : "Average", "label" : "Prod" }]
           ],
           "view" : "timeSeries",
           "region" : var.aws_region
@@ -52,9 +52,9 @@ resource "aws_cloudwatch_dashboard" "dashboard" {
         "properties" : {
           "title" : "Mean Time to Deployment (seconds)",
           "metrics" : [
-            [ "AWS/CodeDeploy", "DeploymentDuration", "ApplicationName", var.codedeploy_app, "DeploymentGroupName", var.codedeploy_deployment_groups["dev"], { "stat": "Average", "label": "Dev" } ],
-            [ ".", ".", ".", ".", ".", var.codedeploy_deployment_groups["staging"], { "stat": "Average", "label": "Staging" } ],
-            [ ".", ".", ".", ".", ".", var.codedeploy_deployment_groups["prod"], { "stat": "Average", "label": "Prod" } ]
+            ["AWS/CodeDeploy", "DeploymentDuration", "ApplicationName", var.codedeploy_app, "DeploymentGroupName", var.codedeploy_deployment_groups["dev"], { "stat" : "Average", "label" : "Dev" }],
+            [".", ".", ".", ".", ".", var.codedeploy_deployment_groups["staging"], { "stat" : "Average", "label" : "Staging" }],
+            [".", ".", ".", ".", ".", var.codedeploy_deployment_groups["prod"], { "stat" : "Average", "label" : "Prod" }]
           ],
           "view" : "timeSeries",
           "region" : var.aws_region,
@@ -68,31 +68,32 @@ resource "aws_cloudwatch_dashboard" "dashboard" {
 
       # Deployment Success Rate (CodeDeploy)
       {
-        "type": "metric",
-        "x": 0,
-        "y": 14,
-        "width": 12,
-        "height": 6,
-        "properties": {
-          "title": "Deployment Success Rate",
-          "metrics": [
-            [ "AWS/CodeDeploy", "DeploymentSuccessCount", "ApplicationName", var.codedeploy_app ],
-            [ ".", "DeploymentFailureCount", ".", ".", { "id": "failure" } ]
+        "type" : "metric",
+        "x" : 0,
+        "y" : 14,
+        "width" : 12,
+        "height" : 6,
+        "properties" : {
+          "title" : "Deployment Success Rate",
+          "metrics" : [
+            ["AWS/CodeDeploy", "DeploymentSuccessCount", "ApplicationName", var.codedeploy_app],
+            [".", "DeploymentFailureCount", ".", ".", { "id" : "failure" }]
           ],
-          "view": "timeSeries",
-          "region": var.aws_region
+          "view" : "timeSeries",
+          "region" : var.aws_region
         }
       },
       {
-        "type": "log",
-        "x": 0,
-        "y": 21,
-        "width": 12,
-        "height": 6,
-        "properties": {
-          "query": "fields @timestamp, @message | filter @message like /error/ or /fail/ | sort @timestamp desc | limit 20",
-          "region": "us-east-1",
-          "title": "Recent Deployment Errors"
+        "type" : "log",
+        "x" : 0,
+        "y" : 21,
+        "width" : 12,
+        "height" : 6,
+        "properties" : {
+          "region" : "us-east-1"
+          "title" : "Recent Deployment Errors"
+          "logGroupNames" : var.all_codebuild_log_groups
+          "query" : "fields @timestamp, @message | filter @message like /ERROR/ or @message like /FAIL/ or @message like /Exception/ | sort @timestamp desc | limit 20"
         }
       }
     ]
@@ -141,7 +142,7 @@ resource "aws_cloudwatch_metric_alarm" "app_5xx_alarm" {
   alarm_actions       = [local.sns_topic_arn]
 
   dimensions = {
-    TargetGroup = split("/", each.value)[1]
+    TargetGroup  = split("/", each.value)[1]
     LoadBalancer = split("/", each.value)[0]
   }
 
