@@ -90,9 +90,9 @@ resource "aws_cloudwatch_dashboard" "dashboard" {
         "width" : 12,
         "height" : 6,
         "properties" : {
-          "region" : "us-east-1"
-          "title" : "Recent Deployment Errors"
-          "logGroupNames" : var.all_codebuild_log_groups
+          "region" : "us-east-1",
+          "title" : "Recent Deployment Errors",
+          "logGroupNames" : var.all_codebuild_log_groups,
           "query" : "fields @timestamp, @message | filter @message like /ERROR/ or @message like /FAIL/ or @message like /Exception/ | sort @timestamp desc | limit 20"
         }
       }
