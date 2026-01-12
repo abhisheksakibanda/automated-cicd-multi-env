@@ -92,8 +92,7 @@ resource "aws_cloudwatch_dashboard" "dashboard" {
         "properties" : {
           "region" : "us-east-1",
           "title" : "Recent Deployment Errors",
-          "logGroupNames" : var.all_codebuild_log_groups,
-          "query" : "fields @timestamp, @message | filter @message like /ERROR/ or @message like /FAIL/ or @message like /Exception/ | sort @timestamp desc | limit 20"
+          "query" : "SOURCE '/aws/codebuild/automated-cicd-multi-env-dev-build' | SOURCE '/aws/codebuild/automated-cicd-multi-env-test' | fields @timestamp, @message | filter @message like /ERROR/ or @message like /FAIL/ or @message like /Exception/ | sort @timestamp desc | limit 20"
         }
       }
     ]
