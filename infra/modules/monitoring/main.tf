@@ -93,12 +93,7 @@ resource "aws_cloudwatch_dashboard" "dashboard" {
           "region" : "us-east-1",
           "title" : "Recent Deployment Errors",
           "logGroupNames" : var.all_codebuild_log_groups,
-          "query" : <<EOT
-                    fields @timestamp, @message
-                    | filter @message like /ERROR/ or @message like /FAIL/ or @message like /Exception/
-                    | sort @timestamp desc
-                    | limit 20
-                    EOT
+          "query" : "fields @timestamp, @message | filter @message like /ERROR/ or @message like /FAIL/ or @message like /Exception/ | sort @timestamp desc | limit 20"
         }
       }
     ]
