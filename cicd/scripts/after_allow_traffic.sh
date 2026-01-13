@@ -27,4 +27,3 @@ else
     echo "CloudWatch alarms will trigger rollback if needed"
     exit 0
 fi
-
