@@ -18,6 +18,11 @@ variable "codebuild_project_dev" {
   description = "CodeBuild project for the development environment"
 }
 
+variable "codebuild_test_project" {
+  type        = string
+  description = "CodeBuild project for running integration tests"
+}
+
 variable "codebuild_project_staging" {
   type        = string
   description = "CodeBuild project for the staging environment"
@@ -26,16 +31,6 @@ variable "codebuild_project_staging" {
 variable "codebuild_project_prod" {
   type        = string
   description = "CodeBuild project for the production environment"
-}
-
-variable "all_codebuild_log_groups" {
-  type        = list(string)
-  description = "List of all CodeBuild log group names"
-}
-
-variable "codedeploy_app" {
-  type        = string
-  description = "CodeDeploy application name"
 }
 
 variable "alert_email" {
@@ -61,8 +56,14 @@ variable "target_group_blue_arns" {
   default     = {}
 }
 
-variable "codedeploy_deployment_groups" {
+variable "alb_metric_names" {
   type        = map(string)
-  description = "Map of deployment groups by environment"
+  description = "Map of ALB metric names by environment"
+  default     = {}
+}
+
+variable "target_group_metric_names" {
+  type        = map(string)
+  description = "Map of target group metric names by environment"
   default     = {}
 }

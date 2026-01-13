@@ -26,3 +26,27 @@ output "alb_dns" {
 output "alb_security_group_ids" {
   value = { for k, v in aws_security_group.alb_sg : k => v.id }
 }
+
+data "aws_caller_identity" "current" {}
+
+output "alb_metric_names" {
+  value = {
+    for k, v in aws_lb.this :
+    k => replace(
+      v.arn,
+      "arn:aws:elasticloadbalancing:${var.aws_region}:${data.aws_caller_identity.current.account_id}:loadbalancer/",
+      ""
+    )
+  }
+}
+
+output "target_group_metric_names" {
+  value = {
+    for k, v in aws_lb_target_group.blue :
+    k => replace(
+      v.arn,
+      "arn:aws:elasticloadbalancing:${var.aws_region}:${data.aws_caller_identity.current.account_id}:targetgroup/",
+      ""
+    )
+  }
+}
