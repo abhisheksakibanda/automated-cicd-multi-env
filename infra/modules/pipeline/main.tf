@@ -97,6 +97,7 @@ resource "aws_codestarconnections_connection" "github_connection" {
 resource "aws_codepipeline" "cicd_pipeline" {
   name     = "${var.project_name}-pipeline"
   role_arn = aws_iam_role.codepipeline_role.arn
+  pipeline_type = "V2"
 
   artifact_store {
     type     = "S3"
