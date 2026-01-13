@@ -57,4 +57,3 @@ fi
 
 echo "AWS Inspector scan passed"
 exit 0
-
