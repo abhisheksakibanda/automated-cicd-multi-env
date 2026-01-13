@@ -77,6 +77,13 @@ resource "aws_iam_role_policy" "codepipeline_permissions" {
           "codedeploy:GetApplicationRevision"
         ]
         Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:PutMetricData"
+        ]
+        Resource = "*"
       }
     ]
   })
