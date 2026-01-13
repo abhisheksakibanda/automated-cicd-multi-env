@@ -77,13 +77,6 @@ resource "aws_iam_role_policy" "codepipeline_permissions" {
           "codedeploy:GetApplicationRevision"
         ]
         Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "cloudwatch:PutMetricData"
-        ]
-        Resource = "*"
       }
     ]
   })
@@ -95,8 +88,8 @@ resource "aws_codestarconnections_connection" "github_connection" {
 }
 
 resource "aws_codepipeline" "cicd_pipeline" {
-  name     = "${var.project_name}-pipeline"
-  role_arn = aws_iam_role.codepipeline_role.arn
+  name          = "${var.project_name}-pipeline"
+  role_arn      = aws_iam_role.codepipeline_role.arn
   pipeline_type = "V2"
 
   artifact_store {
