@@ -158,7 +158,6 @@ resource "aws_codedeploy_deployment_group" "dg" {
 }
 
 # CloudWatch alarms for application health (rollback triggers)
-# These alarms monitor target group health and trigger CodeDeploy rollback
 resource "aws_cloudwatch_metric_alarm" "app_unhealthy" {
   for_each = var.target_group_blue_arns
 
