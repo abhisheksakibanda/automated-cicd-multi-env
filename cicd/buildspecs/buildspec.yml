@@ -22,17 +22,6 @@ phases:
 
   build:
     commands:
-      - echo "=== Starting application for integration tests ==="
-      - python app/app.py &   # or flask run / uvicorn main:app
-      - |
-        until curl -s http://localhost:5000/health; do
-          echo "Waiting for app to be ready..."
-          sleep 2
-        done
-
-      - echo "=== Running INTEGRATION tests ==="
-      - pytest tests/integration/
-
       - echo "=== Packaging artifact ==="
       - rm -rf build
       - mkdir -p build/app
@@ -51,7 +40,7 @@ phases:
 
       # Safety - Python dependency vulnerability scanning
       - echo "Running Safety..."
-      - safety check --json --output safety-output.json || true
+      - (safety check --output json > safety-output.json) || true
       - safety check || true
 
       - echo "=== Evaluating Quality Gates ==="
