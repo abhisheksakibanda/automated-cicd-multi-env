@@ -89,6 +89,8 @@ resource "aws_launch_template" "launch_template" {
 
     cat <<EOT >/etc/myapp.env
     APP_ENV=${each.key}
+    BREAK_HEALTH=$([ "${each.key}" = "dev" ] && echo "true" || echo "false")
+    FLASK_BIND_HOST=0.0.0.0
     EOT
 
     chmod 644 /etc/myapp.env
